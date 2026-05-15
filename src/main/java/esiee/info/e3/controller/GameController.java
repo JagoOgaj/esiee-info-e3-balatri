@@ -1,81 +1,108 @@
 package esiee.info.e3.controller;
 
+import esiee.info.e3.config.enums.TextConstant;
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.model.GameModel;
-import esiee.info.e3.view.IView;
-
+import esiee.info.e3.view.interfaces.IView;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class GameController {
-    private final GameModel model;
-    private final IView view;
-    private final List<Card> selectedCards = new ArrayList<>();
+  private final GameModel model;
+  private final IView view;
+  private final List<Card> selectedCards;
 
-    public GameController(GameModel model, IView view) {
-        this.model = model;
-        this.view = view;
+  public GameController(GameModel model, IView view) {
+    this.model = Objects.requireNonNull(model);
+    this.view = Objects.requireNonNull(view);
+    this.selectedCards = new ArrayList<>();
+  }
+
+  public void init() {
+    this.model.startRound();
+    this.refreshView();
+    this.view.start();
+  }
+
+  public void resetGame() {
+    this.selectedCards.clear();
+    this.model.resetGame();
+    this.refreshView();
+  }
+
+  public void toggleCardSelection(Card card) {
+    var selectedCard = Objects.requireNonNull(card);
+    if (this.selectedCards.contains(selectedCard)) {
+      this.selectedCards.remove(selectedCard);
+    } else {
+      if (this.selectedCards.size() < 5) {
+        this.selectedCards.add(selectedCard);
+      } else {
+        this.view.showError(TextConstant.TEXT_CONSTANT_ERROR_MAX_CARDS.getText());
+      }
+    }
+    this.refreshView();
+  }
+
+  public void handlePlay() {
+    if (this.selectedCards.isEmpty()) {
+      return;
+    }
+    if (this.model.getState().getHandsLeft() <= 0) {
+      return;
     }
 
-    public void init() {
-        model.startRound();
-        refreshView();
-        view.start();
-    }
+    try {
+      var eval = Objects.requireNonNull(this.model.evaluateSelection(this.selectedCards));
+      var scoreGained = this.model.playHand(new ArrayList<>(this.selectedCards));
+      this.selectedCards.clear();
 
-    public void toggleCardSelection(Card card) {
-        if (selectedCards.contains(card)) {
-            selectedCards.remove(card);
+      var state = this.model.getState();
+
+      if (state.getCurrentScore() >= state.getCurrentBlind().score()) {
+        state.upgradeHand(eval.combo());
+        if (this.model.nextBlind()) {
+
+          var msg =
+              TextConstant.TEXT_CONSTANT_BLIND_BEATEN.getText()
+                  + eval.combo().getLabel()
+                  + TextConstant.TEXT_CONSTANT_LEVEL_INCREASED.getText();
+          this.view.showMessage(msg);
         } else {
-            if (selectedCards.size() < 5) {
-                selectedCards.add(card);
-            } else {
-                view.showError("Vous ne pouvez sélectionner que 5 cartes maximum.");
-            }
+          this.view.showGameOver(true, state.getCurrentScore());
         }
-        refreshView();
+      } else if (state.getHandsLeft() <= 0) {
+        this.view.showGameOver(false, state.getCurrentScore());
+      } else {
+        this.view.showMessage(
+            TextConstant.TEXT_CONSTANT_HAND_PLAYED.getText()
+                + scoreGained
+                + TextConstant.TEXT_CONSTANT_POINTS.getText());
+      }
+
+      this.refreshView();
+    } catch (Exception e) {
+      this.view.showError(e.getMessage());
     }
+  }
 
-    public void handlePlay() {
-        if (selectedCards.isEmpty()) {
-            view.showError("Sélectionnez au moins une carte pour jouer.");
-            return;
-        }
-
-        try {
-            var scoreGained = model.playHand(new ArrayList<>(selectedCards));
-            view.showMessage("Main jouée ! +" + scoreGained + " points.");
-
-            selectedCards.clear();
-            checkGameOver();
-            refreshView();
-        } catch (Exception e) {
-            view.showError(e.getMessage());
-        }
+  public void handleDiscard() {
+    if (this.selectedCards.isEmpty()) {
+      return;
     }
-
-    public void handleDiscard() {
-        if (selectedCards.isEmpty()) {
-            view.showError("Sélectionnez les cartes à défausser.");
-            return;
-        }
-
-        try {
-            model.discardCards(new ArrayList<>(selectedCards));
-            selectedCards.clear();
-            refreshView();
-        } catch (Exception e) {
-            view.showError(e.getMessage());
-        }
+    try {
+      this.model.discardCards(new ArrayList<>(this.selectedCards));
+      this.selectedCards.clear();
+      this.refreshView();
+    } catch (Exception e) {
+      this.view.showError(e.getMessage());
     }
+  }
 
-    private void checkGameOver() {
-        if (model.getState().getHandsLeft() <= 0) {
-            view.showGameOver(model.getState().getCurrentScore());
-        }
-    }
-
-    private void refreshView() {
-        view.update(model.getState(), model.getCurrentHand(), List.copyOf(selectedCards));
-    }
+  public void refreshView() {
+    var eval = this.model.evaluateSelection(this.selectedCards);
+    this.view.update(
+        this.model.getState(), this.model.getCurrentHand(), List.copyOf(this.selectedCards), eval);
+  }
 }

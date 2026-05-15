@@ -1,7 +1,7 @@
-package esiee.info.e3.model;
+package esiee.info.e3.model.interfaces;
 
 import esiee.info.e3.domain.Card;
-import esiee.info.e3.domain.Combination;
+import esiee.info.e3.domain.enums.Combination;
 
 import java.util.List;
 

@@ -1,6 +1,6 @@
-package esiee.info.e3.domain;
+package esiee.info.e3.domain.enums;
 
-import static esiee.info.e3.domain.Combination.*;
+import static esiee.info.e3.domain.enums.Combination.*;
 
 public enum Planet {
     PLANET_PLUTO("Pluton", COMBINATION_HIGH_MAP, 10, 1),
@@ -25,6 +25,13 @@ public enum Planet {
         this.multiplierBonus = multiplierBonus;
     }
 
+    public static Planet fromCombination(Combination combo) {
+        for (var p : values()) {
+            if (p.getCombination() == combo) return p;
+        }
+        return null;
+    }
+
     public String getLabel() {
         return this.label;
     }
@@ -39,5 +46,9 @@ public enum Planet {
 
     public int getChipsBonus() {
         return this.chipsBonus;
+    }
+
+    public String getFileName() {
+        return this.name().replace("PLANET_", "").toLowerCase() + ".png";
     }
 }
