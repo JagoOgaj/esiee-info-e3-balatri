@@ -2,7 +2,9 @@ package esiee.info.e3.config.enums;
 
 public enum TextConstant {
     TEXT_CONSTANT_VICTORY("VICTOIRE ! Score : "),
+    TEXT_CONSTANT_GGWP_VICTORY("Félicitations ! Tu as réussi à battre tous les blinds ! (Appuie sur Q pour quitter ou R pour recommencer)"),
     TEXT_CONSTANT_DEFEAT("DÉFAITE ! Score : "),
+    TEXT_CONSTANT_GGWP_DEFEAT("Tu feras (surement) mieux la prochaine fois ! (Appuie sur Q pour quitter ou R pour recommencer)"),
     TEXT_CONSTANT_GAME_TITLE("BALATRI"),
     TEXT_CONSTANT_PLAY("Jouer"),
     TEXT_CONSTANT_BY(" / "),

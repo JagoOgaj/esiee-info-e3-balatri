@@ -53,6 +53,9 @@ public class GameController {
             System.exit(0);
         }
         if (this.selectedCards.isEmpty()) {
+            if(actionFromConsole.equals(Optional.of('J'))) {
+                view.showError(TextConstant.TEXT_CONSTANT_ERROR_PLAY_EMPTY.getText());
+            }
             return;
         }
         if (this.model.getState().getHandsLeft() <= 0) {
@@ -95,7 +98,9 @@ public class GameController {
 
     public void handleDiscard() {
         if (this.selectedCards.isEmpty()) {
+
             view.showError(TextConstant.TEXT_CONSTANT_ERROR_DISCARD_EMPTY.getText());
+
             return;
         }
         try {

@@ -4,6 +4,7 @@ import esiee.info.e3.config.enums.TextConstant;
 import esiee.info.e3.controller.GameController;
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.EvaluatedHand;
+import esiee.info.e3.domain.enums.Planet;
 import esiee.info.e3.model.GameState;
 import esiee.info.e3.view.interfaces.IView;
 
@@ -15,6 +16,7 @@ import java.util.Scanner;
 public class ViewConsole implements IView {
     private GameController controller;
     private GameState currentState;
+    private EvaluatedHand eval;
     private List<Card> currentHand = List.of();
     private List<Card> selectedCards = List.of();
     private String message = "Bienvenue dans Balatri !";
@@ -33,6 +35,7 @@ public class ViewConsole implements IView {
         this.currentState = state;
         this.currentHand = hand;
         this.selectedCards = selectedCards;
+        this.eval = eval;
     }
 
     public void showMessage(String message) {
@@ -48,8 +51,25 @@ public class ViewConsole implements IView {
 
     @Override
     public void showGameOver(boolean victory, long finalScore) {
+        if (!victory) {
+            IO.println(TextConstant.TEXT_CONSTANT_DEFEAT.getText() + finalScore);
+            IO.println(TextConstant.TEXT_CONSTANT_GGWP_DEFEAT.getText());
+        } else {
+            IO.println(TextConstant.TEXT_CONSTANT_VICTORY.getText() + finalScore);
+            IO.println(TextConstant.TEXT_CONSTANT_GGWP_VICTORY.getText());
+        }
+            var choice = sc.next().trim().toUpperCase();
+            while (!choice.equals("Q") && !choice.equals("R")) {
+                IO.println("Veuillez entrer Q pour quitter ou R pour recommencer !");
+                choice = sc.next().trim().toUpperCase();
+            }
+            if (choice.equals("Q")) {
+                System.exit(0);
+            }
+            controller.resetGame();
+        }
 
-    }
+
 
     @Override
     public void start() {
@@ -74,16 +94,16 @@ public class ViewConsole implements IView {
             IO.println("");
         }
         IO.println("============================================================");
-        IO.println("[BLIND] " + "à définir" + " | [CIBLE] " + "à définir ");
+        IO.println("[BLIND] " + currentState.getCurrentBlind().name() + " | [CIBLE] " + currentState.getCurrentBlind().score());
         IO.println("[SCORE] " + currentState.getCurrentScore() + "      | [MAINS] " + currentState.getHandsLeft() + "      | [DEFAUSSES] " + currentState.getDiscardsLeft());
-        IO.println("[BONUS] " + " à définir ");
+        IO.println("[BONUS] " + (this.eval == null ? "X" : Planet.fromCombination(eval.combo()) == null ? "X" : Planet.fromCombination(eval.combo()).getLabel()));
         IO.println("============================================================");
         IO.println("");
 
         IO.println("Vos 8 cartes :");
         int i = 1;
         for (Card card : currentHand) {
-            IO.print(i + ": " + card.rank().getLabel() + "-" + card.suit().getLabel() + " ");
+            IO.println(i + ": " + card.rank().getLabel() + "-" + card.suit().getLabel());
             i++;
         }
         IO.println("");
