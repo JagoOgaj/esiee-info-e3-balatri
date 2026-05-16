@@ -13,6 +13,7 @@ import esiee.info.e3.view.utils.UIStyle;
 import java.awt.*;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public class GamePage implements IPage {
   private final ViewMain context;
@@ -209,9 +210,10 @@ public class GamePage implements IPage {
         5,
         0.08,
         0.90);
-    sidebar.addComponent(
+
+      sidebar.addComponent(
         new UIButton(
-            TextConstant.TEXT_CONSTANT_PLAY_HAND.getText(), playStyle, this.controller::handlePlay),
+            TextConstant.TEXT_CONSTANT_PLAY_HAND.getText(), playStyle,() -> this.controller.handlePlay(Optional.empty())),
         82,
         5,
         0.14,
