@@ -324,7 +324,7 @@ public class GamePage implements IPage {
     var style =
         new UIStyle.Builder()
             .text(this.overlayColor)
-            .font(this.context.getGameFont().deriveFont(55f))
+            .font(this.context.getGameFont().deriveFont(45f))
             .shadow(Color.BLACK, 5)
             .build();
     this.playedCardsContainer.addComponent(
