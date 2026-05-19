@@ -53,9 +53,6 @@ public class GameController {
             System.exit(0);
         }
         if (this.selectedCards.isEmpty()) {
-            if(actionFromConsole.equals(Optional.of('J'))) {
-                view.showError(TextConstant.TEXT_CONSTANT_ERROR_PLAY_EMPTY.getText());
-            }
             view.showError(TextConstant.TEXT_CONSTANT_ERROR_PLAY_EMPTY.getText());
             return;
         }
