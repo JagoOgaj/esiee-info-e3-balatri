@@ -4,6 +4,7 @@ import esiee.info.e3.config.enums.TextConstant;
 import esiee.info.e3.controller.GameController;
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.EvaluatedHand;
+import esiee.info.e3.domain.enums.JokerType;
 import esiee.info.e3.domain.enums.Planet;
 import esiee.info.e3.model.GameState;
 import esiee.info.e3.view.interfaces.IView;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Scanner;
+import java.util.function.Consumer;
 
 public class ViewConsole implements IView {
     private GameController controller;
@@ -69,6 +71,15 @@ public class ViewConsole implements IView {
             controller.resetGame();
         }
 
+    @Override
+    public void showMenu() {
+
+    }
+
+    @Override
+    public void triggerJokerReplacement(JokerType newJoker, Runnable onCancel, Consumer<JokerType> onConfirm) {
+
+    }
 
 
     @Override

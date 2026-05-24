@@ -4,6 +4,7 @@ import esiee.info.e3.domain.Blind;
 
 import java.awt.*;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 public class GameConfig {
@@ -22,10 +23,22 @@ public class GameConfig {
     }
   }
 
-  public static List<Blind> allBlinds() {
-    return List.of(
-        new Blind(1, "Petite Blinde", 300),
-        new Blind(2, "Grosse Blinde", 450),
-        new Blind(3, "Le Crochet", 600));
+    public static List<Blind> allBlinds() {
+        List<Blind> blinds = new ArrayList<>();
+        long baseScore = 100;
+        String[] bossNames = {"Le Crochet", "Les Menottes", "La Maison", "Le Mur", "La Roue", "Le Bras", "L'Oeil", "La Bouche", "La Dent", "La Tête"};
+        for (int i = 0; i < 10; i++) {
+            blinds.add(new Blind(i * 3 + 1, "Petite Blinde (Niv " + (i+1) + ")",  baseScore));
+            blinds.add(new Blind(i * 3 + 2, "Grosse Blinde (Niv " + (i+1) + ")", (long) (baseScore * 1.5)));
+            String bossName = bossNames[i % bossNames.length];
+            blinds.add(new Blind(i * 3 + 3, bossName + " (Niv " + (i+1) + ")", (long) (baseScore * 2)));
+            baseScore = (long)(baseScore * 2.5);
+        }
+        blinds.add(new Blind(31, "Le Cœur du Jeu (Boss Final)", (baseScore * 3)));
+        return blinds;
+    }
+
+  public static String getSavesDir() {
+      return "saves/";
   }
 }

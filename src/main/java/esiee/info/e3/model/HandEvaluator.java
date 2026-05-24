@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class StandardHandEvaluator implements IHandEvaluator {
+public class HandEvaluator implements IHandEvaluator {
 
   @Override
   public Combination evaluate(List<Card> selectedCards) {

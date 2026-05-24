@@ -2,12 +2,16 @@ package esiee.info.e3.model;
 
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.EvaluatedHand;
+import esiee.info.e3.domain.enums.BlindConstraint;
+import esiee.info.e3.domain.enums.Planet;
+import esiee.info.e3.domain.enums.JokerType;
 import esiee.info.e3.model.interfaces.IDeckManager;
 import esiee.info.e3.model.interfaces.IHandEvaluator;
 import esiee.info.e3.model.interfaces.IScoreCalculator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class GameModel {
     private final IDeckManager deckManager;
@@ -15,6 +19,8 @@ public class GameModel {
     private final IScoreCalculator scoreCalculator;
     private final GameState state;
     private final List<Card> currentHand;
+    private final BlindConstraint[] hard;
+    private final JokerRewardService rewardService;
 
     public GameModel(IDeckManager dm, IHandEvaluator he, IScoreCalculator sc) {
         this.deckManager = Objects.requireNonNull(dm);
@@ -22,11 +28,14 @@ public class GameModel {
         this.scoreCalculator = Objects.requireNonNull(sc);
         this.state = new GameState();
         this.currentHand = new ArrayList<>();
+        this.hard = new BlindConstraint[]{ BlindConstraint.THE_HOOK, BlindConstraint.THE_MANACLE, BlindConstraint.THE_HOUSE };
+        this.rewardService = new JokerRewardService(ThreadLocalRandom.current());
     }
 
     public void startRound() {
         this.deckManager.shuffle();
         this.currentHand.clear();
+        this.currentHand.addAll(this.deckManager.draw(8));
         this.refillHand();
     }
 
@@ -36,7 +45,7 @@ public class GameModel {
         this.startRound();
     }
 
-    public EvaluatedHand evaluateSelection(List<Card> selected) {
+    public EvaluatedHand evaluateHand(List<Card> selected) {
         if (selected == null || selected.isEmpty()) {
             return null;
         }
@@ -53,7 +62,11 @@ public class GameModel {
 
         var combo = this.evaluator.evaluate(list);
         var level = this.state.getLevel(combo);
-        var points = this.scoreCalculator.calculateScore(combo, list, level);
+
+        var points = this.scoreCalculator.calculateScore(
+                combo, list, level, this.state.getCurrentConstraint(),
+                this.state, this.state.getActiveJokers()
+        );
 
         this.state.addScore(points);
         this.state.useHand();
@@ -62,7 +75,35 @@ public class GameModel {
         return points;
     }
 
-    public void discardCards(List<Card> selected) {
+    public long calculateExpectedScore(List<Card> selected) {
+        if (selected == null || selected.isEmpty()) return 0;
+        var combo = this.evaluator.evaluate(selected);
+        var level = this.state.getLevel(combo);
+
+        return this.scoreCalculator.calculateScore(
+                combo, selected, level, this.state.getCurrentConstraint(),
+                this.state, this.state.getActiveJokers()
+        );
+    }
+
+
+    public JokerType rollJokerReward(int blindIndex) {
+        return this.rewardService.rollJokerReward(blindIndex, this.state.getActiveJokers());
+    }
+
+    public String getJokerRarityLabel(JokerType joker) {
+        return this.rewardService.getJokerRarity(joker).name();
+    }
+
+    public boolean addJoker(JokerType joker) {
+        return this.state.addJoker(joker);
+    }
+
+    public boolean removeJoker(JokerType joker) {
+        return this.state.removeJoker(joker);
+    }
+
+    public void discardHand(List<Card> selected) {
         if (this.state.getDiscardsLeft() <= 0) {
             throw new IllegalStateException();
         }
@@ -73,14 +114,26 @@ public class GameModel {
     }
 
     private void processCardsExchange(List<Card> selected) {
-        var cardsToDiscard = List.copyOf(selected);
+        var cardsToDiscard = new ArrayList<>(selected);
         this.deckManager.discard(cardsToDiscard);
         cardsToDiscard.forEach(this.currentHand::remove);
+
+        if (this.state.getCurrentConstraint() == BlindConstraint.THE_HOOK) {
+            int toDiscard = Math.min(2, this.currentHand.size());
+            for (int i = 0; i < toDiscard; i++) {
+                int randIdx = ThreadLocalRandom.current().nextInt(this.currentHand.size());
+                Card c = this.currentHand.remove(randIdx);
+                this.deckManager.discard(List.of(c));
+            }
+        }
         this.refillHand();
     }
 
     private void refillHand() {
         var needed = 8 - this.currentHand.size();
+        if (this.state.getCurrentConstraint() == BlindConstraint.THE_MANACLE) {
+            needed = 7 - this.currentHand.size();
+        }
         if (needed > 0) {
             this.currentHand.addAll(this.deckManager.draw(needed));
         }
@@ -96,9 +149,19 @@ public class GameModel {
         }
     }
 
+    public Planet grantRandomPlanetReward() {
+        var allPlanets = Planet.values();
+        var randomIndex = ThreadLocalRandom.current().nextInt(allPlanets.length);
+        var wonPlanet = allPlanets[randomIndex];
+        this.state.upgradeHand(wonPlanet.getCombination());
+        this.state.addWonPlanet(wonPlanet);
+        return wonPlanet;
+    }
+
     public boolean nextBlind() {
         if (this.state.nextBlind()) {
             this.state.resetForNewBlind();
+            this.assignBossConstraint();
             this.deckManager.discard(List.copyOf(this.currentHand));
             this.startRound();
             return true;
@@ -106,11 +169,43 @@ public class GameModel {
         return false;
     }
 
+    private void assignBossConstraint() {
+        int index = this.state.getCurrentBlindIndex();
+        if ((index + 1) % 3 == 0) {
+            int random = ThreadLocalRandom.current().nextInt(100);
+            if (index < 9) {
+                this.state.setCurrentConstraint(getRandomEasyConstraint());
+            } else if (index < 18) {
+                if (random < 50) this.state.setCurrentConstraint(getRandomEasyConstraint());
+                else this.state.setCurrentConstraint(getRandomHardConstraint());
+            } else {
+                if (random < 20) this.state.setCurrentConstraint(getRandomEasyConstraint());
+                else this.state.setCurrentConstraint(getRandomHardConstraint());
+            }
+        } else {
+            this.state.setCurrentConstraint(BlindConstraint.NONE);
+        }
+    }
+
+    private BlindConstraint getRandomEasyConstraint() {
+        BlindConstraint[] easy = { BlindConstraint.THE_CLUB, BlindConstraint.THE_GOAD, BlindConstraint.THE_WINDOW, BlindConstraint.THE_HEAD };
+        return easy[ThreadLocalRandom.current().nextInt(easy.length)];
+    }
+
+    private BlindConstraint getRandomHardConstraint() {
+        return this.hard[ThreadLocalRandom.current().nextInt(hard.length)];
+    }
+
+    public void loadHand(List<Card> loadedHand) {
+        this.currentHand.clear();
+        this.currentHand.addAll(loadedHand);
+    }
+
     public GameState getState() {
         return this.state;
     }
 
-    public List<Card> getCurrentHand() {
+    public List<Card> getHand() {
         return List.copyOf(this.currentHand);
     }
 }

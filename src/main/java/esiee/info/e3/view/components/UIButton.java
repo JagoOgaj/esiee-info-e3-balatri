@@ -1,6 +1,7 @@
 package esiee.info.e3.view.components;
 
 import esiee.info.e3.view.interfaces.UIComponent;
+import esiee.info.e3.view.utils.Bounds;
 import esiee.info.e3.view.utils.UIStyle;
 import java.awt.*;
 import java.util.Objects;
@@ -90,5 +91,4 @@ public class UIButton implements UIComponent {
     return new Bounds(drawX, drawY, finalW, finalH);
   }
 
-  private record Bounds(int x, int y, int w, int h) {}
 }

@@ -4,14 +4,14 @@ import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.enums.Combination;
 import esiee.info.e3.domain.enums.Rank;
 import esiee.info.e3.domain.enums.Suit;
-import esiee.info.e3.model.StandardHandEvaluator;
+import esiee.info.e3.model.HandEvaluator;
 
 import java.util.List;
 
 public class HandEvaluatorTest {
 
     static void main() {
-        StandardHandEvaluator evaluator = new StandardHandEvaluator();
+        HandEvaluator evaluator = new HandEvaluator();
 
         List<Card> straightFlush = List.of(
                 new Card(Rank.RANK_ROI, Suit.SUIT_HEART),
@@ -59,7 +59,7 @@ public class HandEvaluatorTest {
         testHand("Carte Haute", highCard, Combination.COMBINATION_HIGH_MAP, evaluator);
     }
 
-    private static void testHand(String name, List<Card> hand, Combination expected, StandardHandEvaluator evaluator) {
+    private static void testHand(String name, List<Card> hand, Combination expected, HandEvaluator evaluator) {
         Combination result = evaluator.evaluate(hand);
         if (result == expected) {
             System.out.println("SUCCÈS : " + name + " a bien été détectée.");

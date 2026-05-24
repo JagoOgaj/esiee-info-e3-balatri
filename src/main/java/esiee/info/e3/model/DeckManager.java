@@ -9,11 +9,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class StandardDeckManager implements IDeckManager {
+public class DeckManager implements IDeckManager {
   private final List<Card> drawPile;
   private final List<Card> discardPile;
 
-  public StandardDeckManager() {
+  public DeckManager() {
     this.drawPile = new ArrayList<>();
     this.discardPile = new ArrayList<>();
     for (var s : Suit.values()) {

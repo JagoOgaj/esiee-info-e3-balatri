@@ -2,7 +2,7 @@ package esiee.info.e3.domain;
 
 import java.util.Objects;
 
-public record Blind(int id, String name, int score) {
+public record Blind(int id, String name, long score) {
   public Blind {
     Objects.requireNonNull(name);
     if (score < 0) {
@@ -23,7 +23,7 @@ public record Blind(int id, String name, int score) {
     if (o == null) {
       return false;
     }
-    return o instanceof Blind(int id1, String name1, int score1)
+    return o instanceof Blind(int id1, String name1, long score1)
         && this.id == id1
         && this.score == score1
         && Objects.equals(name, name1);

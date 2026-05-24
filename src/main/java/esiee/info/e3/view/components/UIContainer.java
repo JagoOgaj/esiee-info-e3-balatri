@@ -2,6 +2,7 @@ package esiee.info.e3.view.components;
 
 import esiee.info.e3.view.interfaces.UIComponent;
 import esiee.info.e3.view.utils.Bounds;
+import esiee.info.e3.view.utils.GridChild;
 import esiee.info.e3.view.utils.UIStyle;
 import java.awt.*;
 import java.util.ArrayList;
@@ -119,12 +120,5 @@ public class UIContainer implements UIComponent {
     var childX = innerArea.x() + (int) (innerArea.w() * ((double) child.col() / this.cols));
     var childY = innerArea.y() + (int) (innerArea.h() * ((double) child.row() / this.rows));
     return new Bounds(childX, childY, childW, childH);
-  }
-
-  private record GridChild(
-      UIComponent component, int row, int col, double weightH, double weightW) {
-    public GridChild {
-      Objects.requireNonNull(component);
-    }
   }
 }
