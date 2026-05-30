@@ -4,6 +4,7 @@ import esiee.info.e3.config.enums.TextConstant;
 import esiee.info.e3.controller.GameController;
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.EvaluatedHand;
+import esiee.info.e3.domain.GameSnapshot;
 import esiee.info.e3.domain.JokerContext;
 import esiee.info.e3.domain.enums.JokerRarity;
 import esiee.info.e3.domain.enums.JokerType;
@@ -135,6 +136,7 @@ public class GamePage implements IPage {
 
         var pauseBtnStyle = new UIStyle.Builder().bg(new Color(40, 40, 40, 200)).hoverBg(new Color(80, 80, 80, 255)).text(Color.WHITE).radius(10).border(Color.GRAY, 2f).font(this.context.getGameFont().deriveFont(22f)).build();
         gameplayArea.addComponent(new UIButton("PAUSE", pauseBtnStyle, () -> this.isPaused = true), 2, 83, 0.08, 0.15);
+        this.setupHightScore(gameplayArea);
 
         this.setupJokersZone(gameplayArea);
         this.setupScorePreview(gameplayArea);
@@ -154,7 +156,7 @@ public class GamePage implements IPage {
 
         this.jokersContainer = new UIContainer(100, 100, zoneStyle);
         area.addComponent(this.jokersContainer, 1, 4, 0.25, 0.70);
-        area.addComponent(new UIText(() -> this.getActiveJokersCount() + "/5", counterStyle), 23, 0, 0.10, 0.15);
+        area.addComponent(new UIText(() -> this.getActiveJokersCount() + TextConstant.TEXT_CONSTANT_BY_5.getText(), counterStyle), 23, 0, 0.10, 0.15);
     }
 
     private void setupScorePreview(UIContainer area) {
@@ -168,6 +170,22 @@ public class GamePage implements IPage {
         }, previewStyle), 28, 2, 0.05, 0.30);
     }
 
+    private void setupHightScore(UIContainer area) {
+        var previewStyle = new UIStyle.Builder()
+                .text(Color.WHITE)
+                .font(this.context.getGameFont().deriveFont(20f))
+                .build();
+
+        area.addComponent(new UIText(
+                () -> {
+                    if (this.currentState != null && this.currentState.isInfiniteMode()) {
+                        long highScore = this.controller.getHighScore();
+                        return "High Score : " + highScore;
+                    }
+                    return "";
+                },
+                previewStyle), 10, 78, 0.05, 0.30);
+    }
     private UIContainer buildSidebar() {
         var sidebarStyle = new UIStyle.Builder().bg(new Color(40, 35, 30)).border(new Color(100, 80, 50), 3f).radius(20).padding(10).build();
         var sidebar = new UIContainer(100, 100, sidebarStyle);
@@ -245,7 +263,7 @@ public class GamePage implements IPage {
 
     private void addActionButtons(UIContainer sidebar) {
         sidebar.addComponent(new UIButton(TextConstant.TEXT_CONSTANT_DEFAUSSED.getText(), new UIStyle.Builder().bg(new Color(180, 40, 40)).radius(10).text(Color.WHITE).font(this.context.getGameFont().deriveFont(30f)).build(), this.controller::handleDiscard), 74, 5, 0.08, 0.90);
-        sidebar.addComponent(new UIButton(TextConstant.TEXT_CONSTANT_PLAY_HAND.getText(), new UIStyle.Builder().bg(new Color(255, 160, 0)).radius(15).text(Color.WHITE).font(this.context.getGameFont().deriveFont(32f)).build(), () -> this.controller.handlePlay(Optional.empty())), 84, 5, 0.14, 0.90);
+        sidebar.addComponent(new UIButton(TextConstant.TEXT_CONSTANT_PLAY_HAND.getText(), new UIStyle.Builder().bg(new Color(255, 160, 0)).radius(15).text(Color.WHITE).font(this.context.getGameFont().deriveFont(32f)).build(), this.controller::handlePlay), 84, 5, 0.14, 0.90);
     }
 
     private void setupPlayedCardsZone(UIContainer area) {
@@ -256,20 +274,20 @@ public class GamePage implements IPage {
     private void setupHandZone(UIContainer bottom) {
         this.handContainer = new UIContainer(100, 100, new UIStyle.Builder().bg(new Color(0, 0, 0, 100)).radius(15).build());
         bottom.addComponent(this.handContainer, 10, 5, 0.75, 0.70);
-        bottom.addComponent(new UIText(() -> this.getHandSize() + TextConstant.TEXT_CONSTANT_BY.formatBy("8"), new UIStyle.Builder().text(Color.WHITE).font(this.context.getGameFont().deriveFont(22f)).build()), 86, 5, 0.14, 0.15);
+        bottom.addComponent(new UIText(() -> this.getHandSize() + TextConstant.TEXT_CONSTANT_BY_8.getText(), new UIStyle.Builder().text(Color.WHITE).font(this.context.getGameFont().deriveFont(22f)).build()), 86, 5, 0.14, 0.15);
     }
 
     private void setupDeckZone(UIContainer bottom) {
         bottom.addComponent(new UICard(null, false, () -> false, null, this.context, this.CARD_RATIO), 10, 80, 0.65, 0.15);
-        bottom.addComponent(new UIText(() -> this.getDeckRemainingCards() + TextConstant.TEXT_CONSTANT_BY.formatBy("52"), new UIStyle.Builder().text(Color.WHITE).font(this.context.getGameFont().deriveFont(22f)).build()), 78, 80, 0.15, 0.15);
+        bottom.addComponent(new UIText(() -> this.getDeckRemainingCards() + TextConstant.TEXT_CONSTANT_BY_52.getText(), new UIStyle.Builder().text(Color.WHITE).font(this.context.getGameFont().deriveFont(22f)).build()), 78, 80, 0.15, 0.15);
     }
 
     @Override
-    public void update(GameState state, List<Card> hand, List<Card> selectedCards, EvaluatedHand eval) {
-        this.currentState = Objects.requireNonNull(state);
-        this.currentHand = Objects.requireNonNull(hand);
-        this.selectedCards = Objects.requireNonNull(selectedCards);
-        this.currentEvaluation = eval;
+    public void update(GameSnapshot gameSnapshot) {
+        this.currentState = Objects.requireNonNull(gameSnapshot.state());
+        this.currentHand = Objects.requireNonNull(gameSnapshot.hand());
+        this.selectedCards = Objects.requireNonNull(gameSnapshot.selectedCards());
+        this.currentEvaluation = gameSnapshot.evaluation();
         this.refreshContainers();
     }
 

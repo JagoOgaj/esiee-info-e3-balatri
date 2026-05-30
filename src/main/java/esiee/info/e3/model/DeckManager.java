@@ -24,10 +24,12 @@ public class DeckManager implements IDeckManager {
     this.shuffle();
   }
 
-  @Override
-  public void shuffle() {
-    Collections.shuffle(this.drawPile);
-  }
+    @Override
+    public void shuffle() {
+        this.drawPile.addAll(this.discardPile);
+        this.discardPile.clear();
+        Collections.shuffle(this.drawPile);
+    }
 
   @Override
   public List<Card> draw(int count) {

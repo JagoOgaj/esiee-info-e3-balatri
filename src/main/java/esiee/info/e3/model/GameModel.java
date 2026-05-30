@@ -1,13 +1,17 @@
 package esiee.info.e3.model;
 
+import esiee.info.e3.config.enums.TextConstant;
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.EvaluatedHand;
+import esiee.info.e3.domain.GameSnapshot;
 import esiee.info.e3.domain.enums.BlindConstraint;
 import esiee.info.e3.domain.enums.Planet;
 import esiee.info.e3.domain.enums.JokerType;
 import esiee.info.e3.model.interfaces.IDeckManager;
 import esiee.info.e3.model.interfaces.IHandEvaluator;
 import esiee.info.e3.model.interfaces.IScoreCalculator;
+import esiee.info.e3.model.interfaces.ModelObserver;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -21,6 +25,8 @@ public class GameModel {
     private final List<Card> currentHand;
     private final BlindConstraint[] hard;
     private final JokerRewardService rewardService;
+    private final List<ModelObserver> observers;
+    private final List<Card> selectedCards;
 
     public GameModel(IDeckManager dm, IHandEvaluator he, IScoreCalculator sc) {
         this.deckManager = Objects.requireNonNull(dm);
@@ -30,6 +36,19 @@ public class GameModel {
         this.currentHand = new ArrayList<>();
         this.hard = new BlindConstraint[]{ BlindConstraint.THE_HOOK, BlindConstraint.THE_MANACLE, BlindConstraint.THE_HOUSE };
         this.rewardService = new JokerRewardService(ThreadLocalRandom.current());
+        this.observers = new ArrayList<>();
+        this.selectedCards = new ArrayList<>();
+    }
+
+    public void addObserver(ModelObserver observer) {
+        this.observers.add(Objects.requireNonNull(observer));
+    }
+
+    public void notifyObservers() {
+        EvaluatedHand eval = this.selectedCards.isEmpty() ? null : this.evaluateHand();
+        for (ModelObserver observer : observers) {
+            observer.onModelUpdated(new GameSnapshot(this.state, this.getHand(), this.getSelectedCards(), eval));
+        }
     }
 
     public void startRound() {
@@ -40,16 +59,45 @@ public class GameModel {
     }
 
     public void resetGame() {
+        this.resetSelectedCards();
         this.state.resetGame();
         this.deckManager.discard(List.copyOf(this.currentHand));
         this.startRound();
     }
 
-    public EvaluatedHand evaluateHand(List<Card> selected) {
-        if (selected == null || selected.isEmpty()) {
+    public void resetSelectedCards() {
+        this.selectedCards.clear();
+    }
+
+    public boolean isEmptySelectedCards() {
+        return this.selectedCards.isEmpty();
+    }
+
+    public List<Card> getSelectedCards() {
+        return List.copyOf(this.selectedCards);
+    }
+
+    public boolean toggleCardSelection(Card card) {
+        var selectedCard = Objects.requireNonNull(card);
+        if (this.selectedCards.contains(selectedCard)) {
+            this.selectedCards.remove(selectedCard);
+            return true;
+        } else {
+            if (this.selectedCards.size() < 5) {
+                this.selectedCards.add(selectedCard);
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+    }
+
+    public EvaluatedHand evaluateHand() {
+        if (this.selectedCards == null || this.isEmptySelectedCards()) {
             return null;
         }
-        var combo = this.evaluator.evaluate(selected);
+        var combo = this.evaluator.evaluate(this.getSelectedCards());
         var level = this.state.getLevel(combo);
         var baseChips = this.scoreCalculator.computeBaseChips(combo, level);
         var multiplier = this.scoreCalculator.computeMultiplier(combo, level);
@@ -75,13 +123,13 @@ public class GameModel {
         return points;
     }
 
-    public long calculateExpectedScore(List<Card> selected) {
-        if (selected == null || selected.isEmpty()) return 0;
-        var combo = this.evaluator.evaluate(selected);
+    public long calculateExpectedScore() {
+        if (this.selectedCards == null || this.isEmptySelectedCards()) return 0;
+        var combo = this.evaluator.evaluate(this.getSelectedCards());
         var level = this.state.getLevel(combo);
 
         return this.scoreCalculator.calculateScore(
-                combo, selected, level, this.state.getCurrentConstraint(),
+                combo, this.getSelectedCards(), level, this.state.getCurrentConstraint(),
                 this.state, this.state.getActiveJokers()
         );
     }

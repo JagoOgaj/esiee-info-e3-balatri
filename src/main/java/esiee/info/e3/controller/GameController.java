@@ -19,50 +19,46 @@ import java.util.Optional;
 public class GameController {
     private final GameModel model;
     private final IView view;
-    private final List<Card> selectedCards;
 
     public GameController(GameModel model, IView view) {
         this.model = Objects.requireNonNull(model);
         this.view = Objects.requireNonNull(view);
-        this.selectedCards = new ArrayList<>();
     }
 
     public void startGame(boolean infiniteMode) {
-        this.selectedCards.clear();
+        this.model.resetSelectedCards();
         this.model.resetGame();
         this.model.getState().setInfiniteMode(infiniteMode);
-        this.refreshView();
+        //this.refreshView();
+        this.model.notifyObservers();
     }
 
     public void init() {
-        this.refreshView();
+        //this.refreshView();
+        this.model.notifyObservers();
         this.view.start();
     }
 
     public void resetGame() {
-        this.selectedCards.clear();
         this.model.resetGame();
-        this.refreshView();
+        //this.refreshView();
+        this.model.notifyObservers();
     }
 
     public void loadGameFromJson(String saveId) {
-        this.selectedCards.clear();
+        this.model.resetSelectedCards();
         SaveManager.loadGame(saveId, this.model);
-        this.refreshView();
+        //this.refreshView();
+        this.model.notifyObservers();
     }
 
     public void toggleCardSelection(Card card) {
-        var selectedCard = Objects.requireNonNull(card);
-        if (this.selectedCards.contains(selectedCard)) {
-            this.selectedCards.remove(selectedCard);
-        } else {
-            if (this.selectedCards.size() < 5) {
-                this.selectedCards.add(selectedCard);
-            } else {
-                this.view.showError(TextConstant.TEXT_CONSTANT_ERROR_MAX_CARDS.getText());
-            }
+        var isOK = this.model.toggleCardSelection(card);
+        if (!isOK){
+            this.view.showError(TextConstant.TEXT_CONSTANT_ERROR_MAX_CARDS.getText());
         }
-        this.refreshView();
+        //this.refreshView();
+        this.model.notifyObservers();
     }
 
     public void handleRemoveJoker(JokerType joker) {
@@ -70,19 +66,20 @@ public class GameController {
         if (!isRemoved) {
             this.view.showError("Erreur : Impossible de retirer ce Joker.");
         }
-        this.refreshView();
+        //this.refreshView();
+        this.model.notifyObservers();
     }
 
-    public void handlePlay(Optional<Character> actionFromConsole) {
-        if (this.selectedCards.isEmpty()) {
+    public void handlePlay() {
+        if (this.model.isEmptySelectedCards()) {
             view.showError(TextConstant.TEXT_CONSTANT_ERROR_PLAY_EMPTY.getText());
             return;
         }
         if (this.model.getState().getHandsLeft() <= 0) return;
 
         try {
-            var scoreGained = this.model.playHand(new ArrayList<>(this.selectedCards));
-            this.selectedCards.clear();
+            var scoreGained = this.model.playHand(new ArrayList<>(this.model.getSelectedCards()));
+            this.model.resetSelectedCards();
 
             var state = this.model.getState();
 
@@ -99,7 +96,7 @@ public class GameController {
                         jokerText = "\n\nINVENTAIRE JOKERS PLEIN !";
                         this.view.triggerJokerReplacement(
                                 wonJoker,
-                                this::refreshView,
+                                this.model::notifyObservers,
                                 (oldJoker) -> {
                                     if (this.model.removeJoker(oldJoker)) {
                                         if (!this.model.addJoker(wonJoker)) {
@@ -108,7 +105,7 @@ public class GameController {
                                     } else {
                                         this.view.showError("Impossible de supprimer l'ancien Joker.");
                                     }
-                                    this.refreshView();
+                                    this.model.notifyObservers();
                                 }
                         );
                     } else {
@@ -144,7 +141,8 @@ public class GameController {
                 SaveManager.saveGame(model, "EN_COURS");
                 this.view.showMessage("[SCORE]" + TextConstant.TEXT_CONSTANT_HAND_PLAYED.getText() + scoreGained + TextConstant.TEXT_CONSTANT_POINTS.getText());
             }
-            this.refreshView();
+            //this.refreshView();
+            this.model.notifyObservers();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -169,22 +167,34 @@ public class GameController {
     }
 
     public void handleDiscard() {
-        if (this.selectedCards.isEmpty()) {
+        if (this.model.isEmptySelectedCards()) {
             this.view.showError(TextConstant.TEXT_CONSTANT_ERROR_PLAY_EMPTY.getText());
             return;
         }
         if (this.model.getState().getDiscardsLeft() <= 0) return;
         try {
-            this.model.discardHand(new ArrayList<>(this.selectedCards));
-            this.selectedCards.clear();
-            this.refreshView();
+            this.model.discardHand(new ArrayList<>(this.model.getSelectedCards()));
+            this.model.resetSelectedCards();
+            //this.refreshView();
+            this.model.notifyObservers();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public long getExpectedScore() { return this.model.calculateExpectedScore(this.selectedCards); }
+    public long getExpectedScore() { return this.model.calculateExpectedScore(); }
     public void saveAndQuit() { SaveManager.saveGame(this.model, "EN_COURS"); this.view.showMenu(); }
-    public void refreshView() { this.view.update(this.model.getState(), this.model.getHand(), this.selectedCards, this.model.evaluateHand(this.selectedCards)); }
     public void exitGame() { System.exit(0); }
+
+    public long getHighScore() {
+        try {
+            java.io.File f = new java.io.File("saves/highscore.txt");
+            if (f.exists()) {
+                return Long.parseLong(java.nio.file.Files.readString(f.toPath()).trim());
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur de lecture du highscore : " + e.getMessage());
+        }
+        return 0;
+    }
 }

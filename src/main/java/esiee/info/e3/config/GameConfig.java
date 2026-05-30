@@ -37,8 +37,4 @@ public class GameConfig {
         blinds.add(new Blind(31, "Le Cœur du Jeu (Boss Final)", (baseScore * 3)));
         return blinds;
     }
-
-  public static String getSavesDir() {
-      return "saves/";
-  }
 }

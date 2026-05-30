@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 
 public class SaveManager {
 
-    private static final String SAVES_DIR = GameConfig.getSavesDir();
+    private static final String SAVES_DIR = "saves/";
 
     public static void saveGame(GameModel model, String status) {
         try {

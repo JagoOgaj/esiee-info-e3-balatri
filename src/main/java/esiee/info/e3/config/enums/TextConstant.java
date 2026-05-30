@@ -7,7 +7,9 @@ public enum TextConstant {
     TEXT_CONSTANT_GGWP_DEFEAT("Tu feras (surement) mieux la prochaine fois ! (Appuie sur Q pour quitter ou R pour recommencer)"),
     TEXT_CONSTANT_GAME_TITLE("BALATRI"),
     TEXT_CONSTANT_PLAY("Jouer"),
-    TEXT_CONSTANT_BY(" / "),
+    TEXT_CONSTANT_BY_52(" / 52"),
+    TEXT_CONSTANT_BY_8(" / 8"),
+    TEXT_CONSTANT_BY_5(" / 5"),
     TEXT_CONSTANT_SCORE_TO_ACHIEVE("Score à atteindre"),
     TEXT_CONSTANT_ACTUAL_SCORE("Score Actuel"),
     TEXT_CONSTANT_DEFAULT_0X0("0 x 0"),
@@ -34,9 +36,5 @@ public enum TextConstant {
 
     public String getText() {
         return this.text;
-    }
-
-    public String formatBy(String value) {
-        return this.text + value;
     }
 }

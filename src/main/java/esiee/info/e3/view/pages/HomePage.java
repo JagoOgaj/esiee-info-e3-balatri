@@ -4,6 +4,7 @@ import esiee.info.e3.config.enums.TextConstant;
 import esiee.info.e3.controller.GameController;
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.EvaluatedHand;
+import esiee.info.e3.domain.GameSnapshot;
 import esiee.info.e3.domain.enums.Rank;
 import esiee.info.e3.domain.enums.Suit;
 import esiee.info.e3.model.GameState;
@@ -195,7 +196,7 @@ public class HomePage implements IPage {
     }
 
     @Override
-    public void update(GameState state, List<Card> hand, List<Card> selectedCards, EvaluatedHand eval) {}
+    public void update(GameSnapshot gameSnapshot) {}
 
     @Override
     public void showOverlay(String message, Color color, Runnable onClose) {}

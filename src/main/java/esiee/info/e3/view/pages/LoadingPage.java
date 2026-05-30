@@ -2,6 +2,7 @@ package esiee.info.e3.view.pages;
 
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.EvaluatedHand;
+import esiee.info.e3.domain.GameSnapshot;
 import esiee.info.e3.model.GameState;
 import esiee.info.e3.view.ViewMain;
 import esiee.info.e3.view.interfaces.IPage;
@@ -83,6 +84,6 @@ public class LoadingPage implements IPage {
 
     @Override public void handlePointerClick(int mx, int my, float sw, float sh) {}
     @Override public void handlePointerMove(int mx, int my, float sw, float sh) {}
-    @Override public void update(GameState s, List<Card> h, List<Card> sc, EvaluatedHand e) {}
+    @Override public void update(GameSnapshot gameSnapshot) {}
     @Override public void showOverlay(String m, Color c, Runnable o) {}
 }

@@ -7,8 +7,10 @@ import esiee.info.e3.config.enums.TextConstant;
 import esiee.info.e3.controller.GameController;
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.EvaluatedHand;
+import esiee.info.e3.domain.GameSnapshot;
 import esiee.info.e3.domain.enums.JokerType;
 import esiee.info.e3.model.GameState;
+import esiee.info.e3.model.interfaces.ModelObserver;
 import esiee.info.e3.view.interfaces.IPage;
 import esiee.info.e3.view.interfaces.IView;
 import esiee.info.e3.view.pages.GamePage;
@@ -23,13 +25,18 @@ import java.util.Map;
 import java.util.Objects;
 import javax.imageio.ImageIO;
 
-public class ViewMain implements IView {
+public class ViewMain implements IView, ModelObserver {
     private final Map<String, IPage> routes = new HashMap<>();
     private final Map<String, BufferedImage> imageCache = new HashMap<>();
     private final Font gameFont;
     private GameController controller;
     private IPage currentPage;
     private ScreenInfo lastScreenInfo;
+
+    private GameState cachedState;
+    private List<Card> cachedHand;
+    private List<Card> cachedSelectedCards;
+    private EvaluatedHand cachedEval;
 
     public ViewMain(Font gameFont) {
         this.gameFont = Objects.requireNonNull(gameFont);
@@ -43,20 +50,30 @@ public class ViewMain implements IView {
         this.navigateTo(name, false);
     }
 
-  public void navigateTo(String name, boolean withLoading) {
+    public void navigateTo(String name, boolean withLoading) {
         if (withLoading) {
             this.currentPage = new LoadingPage(this, name);
         } else {
             var page = this.routes.get(name);
             if (page != null) {
                 this.currentPage = page;
-                if (this.controller != null) {
-                    this.controller.refreshView();
+                if (this.cachedState != null) {
+                    this.currentPage.update(new GameSnapshot(this.cachedState, this.cachedHand, this.cachedSelectedCards, this.cachedEval));
                 }
             } else {
                 System.err.println("Route not found : " + name);
             }
         }
+    }
+
+    @Override
+    public void onModelUpdated(GameSnapshot gameSnapshot) {
+        this.cachedState = gameSnapshot.state();
+        this.cachedHand = gameSnapshot.hand();
+        this.cachedSelectedCards = gameSnapshot.selectedCards();
+        this.cachedEval = gameSnapshot.evaluation();
+
+        this.update(gameSnapshot);
     }
 
     @Override
@@ -66,9 +83,9 @@ public class ViewMain implements IView {
 
     @Override
     public void update(
-            GameState state, List<Card> hand, List<Card> selectedCards, EvaluatedHand eval) {
+            GameSnapshot gameSnapshot) {
         if (this.currentPage != null) {
-            this.currentPage.update(state, hand, selectedCards, eval);
+            this.currentPage.update(gameSnapshot);
         }
     }
 

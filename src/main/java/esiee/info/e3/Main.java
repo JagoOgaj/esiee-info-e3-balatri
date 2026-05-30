@@ -11,7 +11,7 @@ import esiee.info.e3.view.pages.*;
 import java.awt.*;
 
 public class Main {
-  public static void main(String[] args) {
+  public static void main() {
     GameModel model = new GameModel(new DeckManager(), new HandEvaluator(), new ScoreCalculator());
 
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -29,14 +29,9 @@ public class Main {
               System.err.println(e.getMessage());
           }
       }));
-    if (args.length > 0 && args[0].equals("-console")) {
-      IView view = new ViewConsole();
-      GameController controller = new GameController(model, view);
-      view.setController(controller);
-      controller.init();
-    } else {
       Font pixelFont = GameConfig.loadPixelFont(FontConstant.FONT_BOLD_PIXEL.getPath(), 24f);
       ViewMain view = new ViewMain(pixelFont);
+      model.addObserver(view);
       GameController controller = new GameController(model, view);
 
       view.setController(controller);
@@ -48,4 +43,3 @@ public class Main {
       controller.init();
     }
   }
-}
