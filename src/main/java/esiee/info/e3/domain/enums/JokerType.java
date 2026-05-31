@@ -1075,7 +1075,7 @@ public enum JokerType {
       "Roulette Russe",
       "1 chance sur 4 d'ajouter +50 Mult.",
       (ctx, score) ->
-          ThreadLocalRandom.current().nextInt(4) == 0
+          (!ctx.isPreview() && ThreadLocalRandom.current().nextInt(4) == 0) || (ctx.isPreview() && false)
               ? score.withMultiplier(score.multiplier() + 50)
               : score),
   JOKER_135(

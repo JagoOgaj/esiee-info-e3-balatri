@@ -136,6 +136,14 @@ public class GamePage implements IPage {
 
         var pauseBtnStyle = new UIStyle.Builder().bg(new Color(40, 40, 40, 200)).hoverBg(new Color(80, 80, 80, 255)).text(Color.WHITE).radius(10).border(Color.GRAY, 2f).font(this.context.getGameFont().deriveFont(22f)).build();
         gameplayArea.addComponent(new UIButton("PAUSE", pauseBtnStyle, () -> this.isPaused = true), 2, 83, 0.08, 0.15);
+        
+        var moneyBoxStyle = new UIStyle.Builder().bg(new Color(30, 30, 30, 200)).border(new Color(255, 215, 0), 3f).radius(12).build();
+        var moneyContainer = new UIContainer(100, 100, moneyBoxStyle);
+        moneyContainer.addComponent(new UIAnimatedCoin(this.context), 15, 8, 0.70, 0.30);
+        var moneyTextStyle = new UIStyle.Builder().text(new Color(255, 215, 0)).font(this.context.getGameFont().deriveFont(28f)).shadow(Color.BLACK, 3).build();
+        moneyContainer.addComponent(new UIText(() -> (this.currentState != null ? this.currentState.getMoney() + " $" : ""), moneyTextStyle), 25, 45, 0.50, 0.50);
+        gameplayArea.addComponent(moneyContainer, 12, 83, 0.08, 0.15);
+
         this.setupHightScore(gameplayArea);
 
         this.setupJokersZone(gameplayArea);
@@ -385,6 +393,29 @@ public class GamePage implements IPage {
 
         if (m.startsWith("[SCORE]")) {
             this.centerMessage = m.substring(7); this.centerColor = c; this.onCenterClose = o;
+        } else if (m.startsWith("[SHOP_REWARD:")) {
+            this.isRewardOverlay = true;
+            int endIndex = m.indexOf("]");
+            if (endIndex != -1) {
+                String payload = m.substring(13, endIndex);
+                if (payload.contains("|")) {
+                    String[] parts = payload.split("\\|");
+                    this.rewardBlindId = Integer.parseInt(parts[1]);
+                    if (parts.length > 2) {
+                        this.rewardImagePath = parts[2];
+                    } else {
+                        this.rewardImagePath = null;
+                    }
+                }
+                this.fullScreenMessage = m.substring(endIndex + 1);
+            } else {
+                this.fullScreenMessage = m;
+            }
+            this.fullScreenColor = c; 
+            this.onFullScreenClose = () -> {
+                if (o != null) o.run();
+                this.context.navigateTo("shop");
+            };
         } else if (m.startsWith("[REWARD:")) {
             this.isRewardOverlay = true;
             int endIndex = m.indexOf("]");
@@ -488,6 +519,38 @@ public class GamePage implements IPage {
                         g.setFont(context.getGameFont().deriveFont(10f));
                         g.drawString(this.overlayWonJoker.getJokerName(), jokerX + 10, cardY + 85);
                     }
+                } else if (this.fullScreenMessage != null && this.fullScreenMessage.contains("Total gagné :")) {
+                    // Draw the money coin and amount where the Joker used to be
+                    int moneyX = planetX + 140;
+                    textStartX = moneyX + 150;
+
+                    g.setColor(new Color(50, 40, 20));
+                    g.fillRoundRect(moneyX, cardY, 110, 160, 10, 10);
+                    g.setColor(new Color(255, 215, 0));
+                    g.drawRoundRect(moneyX, cardY, 110, 160, 10, 10);
+
+                    g.setFont(context.getGameFont().deriveFont(18f));
+                    g.drawString("MONNAIE", moneyX + 15, cardY + 30);
+                    
+                    // Call the animated coin directly: wait we can instantiate one or just reuse logic
+                    int currentFrame = ((int)(System.currentTimeMillis() / 150) % 8) + 1;
+                    String formattedFrame = String.format("%02d", currentFrame);
+                    var img = this.context.getImage("/money/Coin_" + formattedFrame + ".png");
+                    
+                    if (img != null) {
+                        g.drawImage(img, moneyX + 20, cardY + 45, 70, 70, null);
+                    } else {
+                        g.fillOval(moneyX + 25, cardY + 50, 60, 60);
+                        g.setColor(Color.WHITE);
+                        g.setFont(context.getGameFont().deriveFont(28f));
+                        g.drawString("$", moneyX + 43, cardY + 92);
+                    }
+
+                    // Extract total money string
+                    // We assume it's in the text like "Total gagné : 8 $"
+                    g.setColor(new Color(255, 215, 0));
+                    g.setFont(context.getGameFont().deriveFont(22f));
+                    g.drawString("+$", moneyX + 35, cardY + 140);
                 }
 
                 g.setColor(Color.WHITE);

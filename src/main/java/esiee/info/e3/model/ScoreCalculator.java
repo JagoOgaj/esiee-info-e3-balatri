@@ -18,7 +18,7 @@ public class ScoreCalculator implements IScoreCalculator {
     @Override
     public long calculateScore(Combination combo, List<Card> cards, int level,
                                BlindConstraint constraint, GameState state,
-                               List<JokerType> activeJokers) {
+                               List<JokerType> activeJokers, boolean isPreview) {
 
         long chips = this.computeBaseChips(combo, level);
         long multiplier = this.computeMultiplier(combo, level);
@@ -37,7 +37,7 @@ public class ScoreCalculator implements IScoreCalculator {
         }
 
         ScoreResult scoreResult = new ScoreResult(chips, multiplier);
-        JokerContext context = new JokerContext(combo, activeCards, cards, level, constraint, state);
+        JokerContext context = new JokerContext(combo, activeCards, cards, level, constraint, state, isPreview);
 
         for (JokerType joker : activeJokers) {
             scoreResult = joker.apply(context, scoreResult);

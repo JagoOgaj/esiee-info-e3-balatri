@@ -14,7 +14,7 @@ import esiee.info.e3.model.interfaces.ModelObserver;
 import esiee.info.e3.view.interfaces.IPage;
 import esiee.info.e3.view.interfaces.IView;
 import esiee.info.e3.view.pages.GamePage;
-import esiee.info.e3.view.pages.LoadingPage; // <-- Pense à importer ta nouvelle page
+import esiee.info.e3.view.pages.LoadingPage; 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;

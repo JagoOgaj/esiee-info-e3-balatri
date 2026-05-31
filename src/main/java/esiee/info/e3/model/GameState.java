@@ -22,6 +22,7 @@ public class GameState {
     private int currentBlindIndex;
     private BlindConstraint currentConstraint = BlindConstraint.NONE;
     private String currentSaveId;
+    private int money = 4; // Start with 4 money
 
     private boolean infiniteMode = false;
     private int loopCount = 0;
@@ -69,6 +70,7 @@ public class GameState {
         this.deckSize = 52;
         this.currentSaveId = null;
         this.loopCount = 0;
+        this.money = 4;
         this.resetForNewBlind();
         for (var combination : Combination.values()) {
             this.handLevels.put(combination, 1);
@@ -82,6 +84,17 @@ public class GameState {
     public void setInfiniteMode(boolean infiniteMode) { this.infiniteMode = infiniteMode; }
     public int getLoopCount() { return loopCount; }
     public void setLoopCount(int loopCount) { this.loopCount = loopCount; }
+
+    public int getMoney() { return money; }
+    public void addMoney(int amount) { this.money += amount; }
+    public boolean spendMoney(int amount) { 
+        if (this.money >= amount) { 
+            this.money -= amount; 
+            return true; 
+        } 
+        return false; 
+    }
+    public void setMoney(int money) { this.money = money; }
 
     public List<JokerType> getActiveJokers() { return List.copyOf(this.activeJokers); }
     public boolean addJoker(JokerType joker) {

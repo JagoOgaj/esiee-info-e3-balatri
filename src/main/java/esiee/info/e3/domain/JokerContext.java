@@ -13,5 +13,6 @@ public record JokerContext(
         List<Card> allSelectedCards,
         int level,
         BlindConstraint constraint,
-        GameState state
+        GameState state,
+        boolean isPreview
 ) {}
