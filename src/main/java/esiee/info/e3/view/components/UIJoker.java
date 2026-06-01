@@ -2,18 +2,16 @@ package esiee.info.e3.view.components;
 
 import esiee.info.e3.domain.enums.JokerType;
 import esiee.info.e3.view.ViewMain;
-import esiee.info.e3.view.interfaces.UIComponent;
 
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.util.Objects;
 
-public class UIJoker implements UIComponent {
+public final class UIJoker implements UIComponent {
     private final JokerType joker;
     private final ViewMain context;
     private final Runnable onClick;
     private final double ratio;
-    private boolean isHovered;
 
     public UIJoker(JokerType joker, ViewMain context, Runnable onClick, double ratio) {
         this.joker = joker;
@@ -61,14 +59,6 @@ public class UIJoker implements UIComponent {
             int strW = g.getFontMetrics().stringWidth(name);
             g.drawString(name, bounds.x + (bounds.width - strW) / 2, bounds.y + bounds.height / 2);
         }
-
-        if (this.isHovered && this.onClick != null) {
-            g.setColor(new Color(255, 255, 255, 40));
-            g.fillRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 12, 12);
-            g.setColor(Color.CYAN);
-            g.setStroke(new BasicStroke(2f));
-            g.drawRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 12, 12);
-        }
     }
 
     @Override
@@ -81,11 +71,5 @@ public class UIJoker implements UIComponent {
             return true;
         }
         return false;
-    }
-
-    @Override
-    public void handlePointerMove(int mx, int my, int x, int y, int width, int height) {
-        Rectangle bounds = this.getBounds(x, y, width, height);
-        this.isHovered = bounds.contains(mx, my);
     }
 }

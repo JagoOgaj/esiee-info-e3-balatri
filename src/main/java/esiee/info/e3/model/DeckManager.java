@@ -3,13 +3,13 @@ package esiee.info.e3.model;
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.enums.Rank;
 import esiee.info.e3.domain.enums.Suit;
-import esiee.info.e3.model.interfaces.IDeckManager;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class DeckManager implements IDeckManager {
+public final class DeckManager implements IDeckManager {
   private final List<Card> drawPile;
   private final List<Card> discardPile;
 

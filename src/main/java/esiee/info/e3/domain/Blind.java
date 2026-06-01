@@ -12,25 +12,4 @@ public record Blind(int id, String name, long score) {
       throw new IllegalArgumentException("id should be between 1 and 31");
     }
   }
-
-  @Override
-  public String toString() {
-    return String.format("Id : %d, Name : %s, Score : %d\n", this.id, this.name, this.score);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (o == null) {
-      return false;
-    }
-    return o instanceof Blind(int id1, String name1, long score1)
-        && this.id == id1
-        && this.score == score1
-        && Objects.equals(name, name1);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(name, score);
-  }
 }

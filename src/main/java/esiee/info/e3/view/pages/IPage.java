@@ -1,18 +1,12 @@
-package esiee.info.e3.view.interfaces;
+package esiee.info.e3.view.pages;
 
-import esiee.info.e3.domain.Card;
-import esiee.info.e3.domain.EvaluatedHand;
 import esiee.info.e3.domain.GameSnapshot;
-import esiee.info.e3.model.GameState;
 import java.awt.*;
-import java.util.List;
 
-public interface IPage {
+public sealed interface IPage permits GamePage, HomePage, LoadingPage, SavesPage, ShopPage {
   void render(Graphics2D g, float sw, float sh);
 
   void handlePointerClick(int mx, int my, float sw, float sh);
-
-  void handlePointerMove(int mx, int my, float sw, float sh);
 
   void update(GameSnapshot gameSnapshot);
 

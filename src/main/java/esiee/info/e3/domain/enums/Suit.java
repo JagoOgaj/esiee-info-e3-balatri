@@ -9,7 +9,7 @@ public enum Suit {
   private final String label;
   private final int value;
 
-  private Suit(String label, int value) {
+  Suit(String label, int value) {
     this.label = label;
     this.value = value;
   }

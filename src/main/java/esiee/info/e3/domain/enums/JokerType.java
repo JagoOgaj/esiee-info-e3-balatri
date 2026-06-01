@@ -3,12 +3,11 @@ package esiee.info.e3.domain.enums;
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.JokerContext;
 import esiee.info.e3.domain.ScoreResult;
-import esiee.info.e3.model.interfaces.JokerEffect;
+import esiee.info.e3.model.JokerEffect;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 public enum JokerType {
-
   JOKER_001(
       "001",
       "Gros Jojo",
@@ -1075,7 +1074,8 @@ public enum JokerType {
       "Roulette Russe",
       "1 chance sur 4 d'ajouter +50 Mult.",
       (ctx, score) ->
-          (!ctx.isPreview() && ThreadLocalRandom.current().nextInt(4) == 0) || (ctx.isPreview() && false)
+          (!ctx.isPreview() && ThreadLocalRandom.current().nextInt(4) == 0)
+                  || (ctx.isPreview() && false)
               ? score.withMultiplier(score.multiplier() + 50)
               : score),
   JOKER_135(

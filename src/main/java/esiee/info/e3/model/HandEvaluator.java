@@ -2,19 +2,18 @@ package esiee.info.e3.model;
 
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.enums.Combination;
-import esiee.info.e3.model.interfaces.IHandEvaluator;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class HandEvaluator implements IHandEvaluator {
+public final class HandEvaluator implements IHandEvaluator {
 
   @Override
   public Combination evaluate(List<Card> selectedCards) {
     var cards = Objects.requireNonNull(selectedCards);
     if (cards.isEmpty()) {
-      throw new IllegalArgumentException("the hand is empty");
+      throw new IllegalArgumentException();
     }
 
     var sortedCards =

@@ -1,22 +1,19 @@
 package esiee.info.e3.view.components;
 
-import esiee.info.e3.view.interfaces.UIComponent;
 import esiee.info.e3.view.utils.Bounds;
 import esiee.info.e3.view.utils.UIStyle;
 import java.awt.*;
 import java.util.Objects;
 
-public class UIButton implements UIComponent {
+public final class UIButton implements UIComponent {
   private final String text;
   private final Runnable action;
   private final UIStyle style;
-  private boolean isHovered;
 
   public UIButton(String text, UIStyle style, Runnable action) {
     this.text = Objects.requireNonNull(text);
     this.style = Objects.requireNonNull(style);
     this.action = Objects.requireNonNull(action);
-    this.isHovered = false;
   }
 
   @Override
@@ -34,10 +31,7 @@ public class UIButton implements UIComponent {
           this.style.borderRadius());
     }
 
-    var bgColor =
-        (this.isHovered && this.style.hoverBackgroundColor() != null)
-            ? this.style.hoverBackgroundColor()
-            : this.style.backgroundColor();
+    var bgColor = this.style.backgroundColor();
 
     g.setColor(bgColor);
     g.fillRoundRect(
@@ -70,12 +64,6 @@ public class UIButton implements UIComponent {
       return true;
     }
     return false;
-  }
-
-  @Override
-  public void handlePointerMove(int mx, int my, int x, int y, int width, int height) {
-    var b = this.calculateBounds(x, y, width, height);
-    this.isHovered = (mx >= b.x() && mx <= b.x() + b.w() && my >= b.y() && my <= b.y() + b.h());
   }
 
   private Bounds calculateBounds(int x, int y, int width, int height) {

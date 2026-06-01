@@ -5,7 +5,7 @@ public enum FontConstant {
 
   private final String fileName;
 
-  private FontConstant(String fileName) {
+  FontConstant(String fileName) {
     this.fileName = fileName;
   }
 

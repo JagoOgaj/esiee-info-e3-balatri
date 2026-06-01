@@ -2,7 +2,7 @@ package esiee.info.e3.view.components;
 
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.view.ViewMain;
-import esiee.info.e3.view.interfaces.UIComponent;
+
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.util.Objects;
@@ -15,7 +15,6 @@ public final class UICard implements UIComponent {
   private final Runnable onClick;
   private final ViewMain context;
   private final double ratio;
-  private boolean isHovered;
 
   public UICard(
       Card card,
@@ -69,11 +68,6 @@ public final class UICard implements UIComponent {
       this.renderFallback(g, bounds);
     }
 
-    if (this.isHovered && this.onClick != null) {
-      g.setColor(new Color(255, 255, 255, 50));
-      g.fillRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 15, 15);
-    }
-
     if (this.isSelected.get()) {
       g.setColor(new Color(255, 215, 0, 220));
       g.setStroke(new BasicStroke(4));
@@ -123,11 +117,5 @@ public final class UICard implements UIComponent {
       return true;
     }
     return false;
-  }
-
-  @Override
-  public void handlePointerMove(int mx, int my, int x, int y, int width, int height) {
-    var bounds = this.getBounds(x, y, width, height);
-    this.isHovered = bounds.contains(mx, my);
   }
 }

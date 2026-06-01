@@ -1,4 +1,4 @@
-package esiee.info.e3.model.interfaces;
+package esiee.info.e3.model;
 
 import esiee.info.e3.domain.JokerContext;
 import esiee.info.e3.domain.ScoreResult;

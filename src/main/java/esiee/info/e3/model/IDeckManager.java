@@ -1,9 +1,9 @@
-package esiee.info.e3.model.interfaces;
+package esiee.info.e3.model;
 
 import esiee.info.e3.domain.Card;
 import java.util.List;
 
-public interface IDeckManager {
+public sealed interface IDeckManager permits DeckManager{
   void shuffle();
 
   List<Card> draw(int count);
