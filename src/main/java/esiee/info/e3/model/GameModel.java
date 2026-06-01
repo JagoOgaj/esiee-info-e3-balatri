@@ -113,7 +113,7 @@ public class GameModel {
 
         var points = this.scoreCalculator.calculateScore(
                 combo, list, level, this.state.getCurrentConstraint(),
-                this.state, this.state.getActiveJokers()
+                this.state, this.state.getActiveJokers(), false
         );
 
         this.state.addScore(points);
@@ -130,7 +130,7 @@ public class GameModel {
 
         return this.scoreCalculator.calculateScore(
                 combo, this.getSelectedCards(), level, this.state.getCurrentConstraint(),
-                this.state, this.state.getActiveJokers()
+                this.state, this.state.getActiveJokers(), true
         );
     }
 

@@ -51,6 +51,7 @@ public class SaveManager {
 
             json.append("  \"infiniteMode\": ").append(state.isInfiniteMode()).append(",\n");
             json.append("  \"loopCount\": ").append(state.getLoopCount()).append(",\n");
+            json.append("  \"money\": ").append(state.getMoney()).append(",\n");
 
             json.append("  \"currentHand\": [\n");
             List<Card> hand = model.getHand();
@@ -153,13 +154,16 @@ public class SaveManager {
 
             boolean infiniteMode = false;
             int loopCount = 0;
+            int money = 4;
             try {
                 infiniteMode = Boolean.parseBoolean(extractString(content, "\"infiniteMode\": (true|false)"));
                 loopCount = Integer.parseInt(extractString(content, "\"loopCount\": (\\d+)"));
+                money = Integer.parseInt(extractString(content, "\"money\": (\\d+)"));
             } catch (Exception ignored) {}
 
             GameState state = model.getState();
             state.loadState(score, handsLeft, discardsLeft, deckSize, blindIndex, infiniteMode, loopCount);
+            state.setMoney(money);
             state.setCurrentSaveId(saveId);
 
             List<Card> loadedHand = new ArrayList<>();

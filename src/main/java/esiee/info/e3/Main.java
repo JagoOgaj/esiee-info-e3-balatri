@@ -6,7 +6,7 @@ import esiee.info.e3.controller.GameController;
 import esiee.info.e3.manager.SaveManager;
 import esiee.info.e3.model.*;
 import esiee.info.e3.view.*;
-import esiee.info.e3.view.interfaces.IView;
+
 import esiee.info.e3.view.pages.*;
 import java.awt.*;
 
@@ -37,6 +37,7 @@ public class Main {
       view.setController(controller);
       view.addRoute("home", new HomePage(view, controller));
       view.addRoute("game", new GamePage(view, controller));
+      view.addRoute("shop", new ShopPage(view, controller));
       view.addRoute("saves", new SavesPage(view, controller));
       view.navigateTo("home");
 

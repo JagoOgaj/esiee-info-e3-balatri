@@ -8,7 +8,7 @@ import esiee.info.e3.model.GameState;
 import java.util.List;
 
 public interface IScoreCalculator {
-    long calculateScore(Combination combo, List<Card> cards, int level, BlindConstraint constraint, GameState state, List<JokerType> activeJokers);
+    long calculateScore(Combination combo, List<Card> cards, int level, BlindConstraint constraint, GameState state, List<JokerType> activeJokers, boolean isPreview);
     int computeBaseChips(Combination combo, int level);
     int computeMultiplier(Combination combo, int level);
 }
