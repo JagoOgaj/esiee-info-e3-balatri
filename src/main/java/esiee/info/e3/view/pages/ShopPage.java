@@ -27,8 +27,12 @@ public class ShopPage implements IPage {
     private UIContainer rootContainer;
     private UIContainer shopItemsContainer;
     private UIContainer inventoryContainer;
-    
-    private record ShopItem(Object item, int price) {}
+
+    private record ShopItem(Object item, int price, JokerType replacedJoker) {
+        public ShopItem(Object item, int price) {
+            this(item, price, null);
+        }
+    }
     private final List<ShopItem> currentShopItems = new ArrayList<>();
     private final List<ShopItem> sessionPurchases = new ArrayList<>();
     
@@ -192,8 +196,14 @@ public class ShopPage implements IPage {
                 this.previewModalContainer = null;
                 this.currentState.addMoney(si.price());
                 this.currentState.removeJoker(joker);
+
+                if (si.replacedJoker() != null) {
+                    this.currentState.addJoker(si.replacedJoker());
+                }
+
                 this.sessionPurchases.remove(si);
-                this.currentShopItems.add(si);
+
+                this.currentShopItems.add(new ShopItem(si.item(), si.price()));
                 this.rebuildShopUI();
                 this.rebuildInventoryUI();
             }), 85, 20, 0.15, 0.30);
@@ -222,7 +232,7 @@ public class ShopPage implements IPage {
                 this.currentState.spendMoney(this.pendingPurchasePrice);
                 this.currentState.removeJoker(oldJoker);
                 this.currentState.addJoker(this.pendingPurchaseJoker);
-                this.sessionPurchases.add(new ShopItem(this.pendingPurchaseJoker, this.pendingPurchasePrice));
+                this.sessionPurchases.add(new ShopItem(this.pendingPurchaseJoker, this.pendingPurchasePrice, oldJoker));
                 this.currentShopItems.remove(shopIndex);
                 this.pendingPurchaseJoker = null;
                 this.swapModalContainer = null;
