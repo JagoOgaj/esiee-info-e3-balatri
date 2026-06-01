@@ -28,12 +28,10 @@ public class ShopPage implements IPage {
     private UIContainer shopItemsContainer;
     private UIContainer inventoryContainer;
     
-    // Shop items
     private record ShopItem(Object item, int price) {}
     private final List<ShopItem> currentShopItems = new ArrayList<>();
     private final List<ShopItem> sessionPurchases = new ArrayList<>();
     
-    // Modal for full inventory
     private JokerType pendingPurchaseJoker = null;
     private int pendingPurchasePrice = 0;
     private UIContainer swapModalContainer;
@@ -53,14 +51,12 @@ public class ShopPage implements IPage {
         var rootStyle = new UIStyle.Builder().bg(new Color(25, 35, 45)).build();
         this.rootContainer = new UIContainer(100, 100, rootStyle);
 
-        // Header
         var titleStyle = new UIStyle.Builder().text(Color.ORANGE).font(this.context.getGameFont().deriveFont(36f)).shadow(Color.BLACK, 3).build();
         this.rootContainer.addComponent(new UIText("LA BOUTIQUE", titleStyle), 2, 5, 0.1, 0.4);
 
         var moneyStyle = new UIStyle.Builder().text(Color.YELLOW).font(this.context.getGameFont().deriveFont(30f)).shadow(Color.BLACK, 3).build();
         this.rootContainer.addComponent(new UIText(() -> "Monnaie : " + (this.currentState != null ? this.currentState.getMoney() : 0) + " $", moneyStyle), 2, 70, 0.1, 0.25);
 
-        // Sub areas
         var boxStyle = new UIStyle.Builder().bg(new Color(0, 0, 0, 120)).radius(15).border(Color.DARK_GRAY, 3f).build();
         this.shopItemsContainer = new UIContainer(100, 100, boxStyle);
         this.rootContainer.addComponent(this.shopItemsContainer, 15, 5, 0.50, 0.90);
@@ -98,7 +94,7 @@ public class ShopPage implements IPage {
         
         for (int i = 0; i < 4 && !availableJokers.isEmpty(); i++) {
             JokerType j = availableJokers.remove(random.nextInt(availableJokers.size()));
-            int price = 5 + random.nextInt(6); // Price between 5 and 10
+            int price = 5 + random.nextInt(6);
             this.currentShopItems.add(new ShopItem(j, price));
         }
     }
@@ -170,7 +166,7 @@ public class ShopPage implements IPage {
                 this.currentState.spendMoney(si.price());
                 this.currentState.addJoker(joker);
                 this.currentShopItems.remove(shopIndex);
-                this.sessionPurchases.add(si); // Added securely for possible refund
+                this.sessionPurchases.add(si);
                 this.rebuildShopUI();
                 this.rebuildInventoryUI();
             }
@@ -197,7 +193,7 @@ public class ShopPage implements IPage {
                 this.currentState.addMoney(si.price());
                 this.currentState.removeJoker(joker);
                 this.sessionPurchases.remove(si);
-                this.currentShopItems.add(si); // En remettant le joker dans la boutique
+                this.currentShopItems.add(si);
                 this.rebuildShopUI();
                 this.rebuildInventoryUI();
             }), 85, 20, 0.15, 0.30);
@@ -223,7 +219,6 @@ public class ShopPage implements IPage {
         int itemX = 5;
         for (var oldJoker : actives) {
             var actJokerComp = new UIJoker(oldJoker, this.context, () -> {
-                // Confirm replacement
                 this.currentState.spendMoney(this.pendingPurchasePrice);
                 this.currentState.removeJoker(oldJoker);
                 this.currentState.addJoker(this.pendingPurchaseJoker);
@@ -286,9 +281,7 @@ public class ShopPage implements IPage {
     }
 
     @Override
-    public void showOverlay(String m, Color c, Runnable o) {
-        // Optionnel : implémentation de l'overlay de la page boutique
-    }
+    public void showOverlay(String m, Color c, Runnable o) {}
 
     @Override
     public void render(Graphics2D g, float sw, float sh) {

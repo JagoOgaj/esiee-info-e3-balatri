@@ -17,8 +17,7 @@ public final class UIAnimatedCoin implements UIComponent {
   @Override
   public void render(Graphics2D g, int x, int y, int width, int height) {
     this.frameCount++;
-    var animationSpeed = 4; // Adjust speed as needed
-    // Assuming 8 frames: Coin_01.png to Coin_08.png
+    var animationSpeed = 4;
     var currentFrame = (this.frameCount / animationSpeed) % 8 + 1;
     String formattedFrame = String.format("%02d", currentFrame);
     

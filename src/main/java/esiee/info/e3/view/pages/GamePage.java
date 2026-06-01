@@ -5,7 +5,6 @@ import esiee.info.e3.controller.GameController;
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.EvaluatedHand;
 import esiee.info.e3.domain.GameSnapshot;
-import esiee.info.e3.domain.JokerContext;
 import esiee.info.e3.domain.enums.JokerRarity;
 import esiee.info.e3.domain.enums.JokerType;
 import esiee.info.e3.domain.enums.Planet;
@@ -18,7 +17,6 @@ import esiee.info.e3.view.utils.UIStyle;
 import java.awt.*;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 public class GamePage implements IPage {
     private final ViewMain context;
@@ -192,7 +190,7 @@ public class GamePage implements IPage {
                     }
                     return "";
                 },
-                previewStyle), 10, 78, 0.05, 0.30);
+                previewStyle), 20, 78, 0.05, 0.30);
     }
     private UIContainer buildSidebar() {
         var sidebarStyle = new UIStyle.Builder().bg(new Color(40, 35, 30)).border(new Color(100, 80, 50), 3f).radius(20).padding(10).build();
@@ -520,7 +518,6 @@ public class GamePage implements IPage {
                         g.drawString(this.overlayWonJoker.getJokerName(), jokerX + 10, cardY + 85);
                     }
                 } else if (this.fullScreenMessage != null && this.fullScreenMessage.contains("Total gagné :")) {
-                    // Draw the money coin and amount where the Joker used to be
                     int moneyX = planetX + 140;
                     textStartX = moneyX + 150;
 
@@ -532,7 +529,6 @@ public class GamePage implements IPage {
                     g.setFont(context.getGameFont().deriveFont(18f));
                     g.drawString("MONNAIE", moneyX + 15, cardY + 30);
                     
-                    // Call the animated coin directly: wait we can instantiate one or just reuse logic
                     int currentFrame = ((int)(System.currentTimeMillis() / 150) % 8) + 1;
                     String formattedFrame = String.format("%02d", currentFrame);
                     var img = this.context.getImage("/money/Coin_" + formattedFrame + ".png");
@@ -546,8 +542,6 @@ public class GamePage implements IPage {
                         g.drawString("$", moneyX + 43, cardY + 92);
                     }
 
-                    // Extract total money string
-                    // We assume it's in the text like "Total gagné : 8 $"
                     g.setColor(new Color(255, 215, 0));
                     g.setFont(context.getGameFont().deriveFont(22f));
                     g.drawString("+$", moneyX + 35, cardY + 140);
@@ -559,10 +553,6 @@ public class GamePage implements IPage {
                 for (String line : this.fullScreenMessage.split("\n")) {
                     g.drawString(line, textStartX, currentTextY);
                     currentTextY += 24;
-                }
-
-                if (this.rewardBlindId != -1) {
-                    this.overlayBlindAnim.render(g, textStartX, currentTextY + 10, 80, 80);
                 }
 
                 g.setFont(context.getGameFont().deriveFont(14f));

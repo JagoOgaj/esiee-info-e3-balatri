@@ -7,14 +7,11 @@ import esiee.info.e3.manager.SaveManager;
 import esiee.info.e3.model.GameModel;
 import esiee.info.e3.model.GameState;
 import esiee.info.e3.view.interfaces.IView;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 public class GameController {
     private final GameModel model;
@@ -29,26 +26,22 @@ public class GameController {
         this.model.resetSelectedCards();
         this.model.resetGame();
         this.model.getState().setInfiniteMode(infiniteMode);
-        //this.refreshView();
         this.model.notifyObservers();
     }
 
     public void init() {
-        //this.refreshView();
         this.model.notifyObservers();
         this.view.start();
     }
 
     public void resetGame() {
         this.model.resetGame();
-        //this.refreshView();
         this.model.notifyObservers();
     }
 
     public void loadGameFromJson(String saveId) {
         this.model.resetSelectedCards();
         SaveManager.loadGame(saveId, this.model);
-        //this.refreshView();
         this.model.notifyObservers();
     }
 
@@ -57,7 +50,6 @@ public class GameController {
         if (!isOK){
             this.view.showError(TextConstant.TEXT_CONSTANT_ERROR_MAX_CARDS.getText());
         }
-        //this.refreshView();
         this.model.notifyObservers();
     }
 
@@ -66,7 +58,6 @@ public class GameController {
         if (!isRemoved) {
             this.view.showError("Erreur : Impossible de retirer ce Joker.");
         }
-        //this.refreshView();
         this.model.notifyObservers();
     }
 
@@ -124,7 +115,6 @@ public class GameController {
                 SaveManager.saveGame(model, "EN_COURS");
                 this.view.showMessage("[SCORE]" + TextConstant.TEXT_CONSTANT_HAND_PLAYED.getText() + scoreGained + TextConstant.TEXT_CONSTANT_POINTS.getText());
             }
-            //this.refreshView();
             this.model.notifyObservers();
         } catch (Exception e) {
             e.printStackTrace();
@@ -158,7 +148,6 @@ public class GameController {
         try {
             this.model.discardHand(new ArrayList<>(this.model.getSelectedCards()));
             this.model.resetSelectedCards();
-            //this.refreshView();
             this.model.notifyObservers();
         } catch (Exception e) {
             e.printStackTrace();
