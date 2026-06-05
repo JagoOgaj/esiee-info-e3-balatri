@@ -1,4 +1,4 @@
-package esiee.info.e3.view;
+package esiee.info.e3.view.main;
 
 import com.github.forax.zen.Application;
 import com.github.forax.zen.PointerEvent;
@@ -9,7 +9,7 @@ import esiee.info.e3.controller.IGameController;
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.EvaluatedHand;
 import esiee.info.e3.domain.GameSnapshot;
-import esiee.info.e3.model.IGameState;
+import esiee.info.e3.model.gameState.IGameState;
 import esiee.info.e3.view.pages.IPage;
 import esiee.info.e3.view.pages.LoadingPage;
 import java.awt.*;

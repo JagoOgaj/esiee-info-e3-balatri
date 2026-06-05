@@ -78,5 +78,4 @@ public final class UIButton implements UIComponent {
     var drawY = y + margin + (allottedH - finalH) / 2;
     return new Bounds(drawX, drawY, finalW, finalH);
   }
-
 }

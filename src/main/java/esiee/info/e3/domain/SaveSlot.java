@@ -13,18 +13,18 @@ public record SaveSlot(
     boolean infiniteMode,
     int loopCount) {
 
-    public SaveSlot {
-        Objects.requireNonNull(id);
-        Objects.requireNonNull(date);
-        Objects.requireNonNull(lastBlindName);
-        if (blindId < 0) {
-            throw new IllegalArgumentException();
-        }
-        if (score < 0) {
-            throw new IllegalArgumentException();
-        }
-        if (loopCount < 0) {
-            throw new IllegalArgumentException();
-        }
+  public SaveSlot {
+    Objects.requireNonNull(id);
+    Objects.requireNonNull(date);
+    Objects.requireNonNull(lastBlindName);
+    if (blindId < 0) {
+      throw new IllegalArgumentException();
     }
+    if (score < 0) {
+      throw new IllegalArgumentException();
+    }
+    if (loopCount < 0) {
+      throw new IllegalArgumentException();
+    }
+  }
 }

@@ -1,4 +1,4 @@
-package esiee.info.e3.model;
+package esiee.info.e3.model.scoreCalculator;
 
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.JokerContext;
@@ -7,6 +7,7 @@ import esiee.info.e3.domain.enums.BlindConstraint;
 import esiee.info.e3.domain.enums.Combination;
 import esiee.info.e3.domain.enums.JokerType;
 import esiee.info.e3.domain.enums.Planet;
+import esiee.info.e3.model.gameState.IGameState;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;

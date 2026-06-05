@@ -4,7 +4,7 @@ import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.enums.Combination;
 import esiee.info.e3.domain.enums.Rank;
 import esiee.info.e3.domain.enums.Suit;
-import esiee.info.e3.model.HandEvaluator;
+import esiee.info.e3.model.handEvaluator.HandEvaluator;
 
 import java.util.List;
 

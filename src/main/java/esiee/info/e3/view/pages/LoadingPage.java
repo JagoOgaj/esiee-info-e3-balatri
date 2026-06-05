@@ -3,7 +3,7 @@ package esiee.info.e3.view.pages;
 import esiee.info.e3.config.enums.RoutesEnum;
 import esiee.info.e3.config.enums.TextConstant;
 import esiee.info.e3.domain.GameSnapshot;
-import esiee.info.e3.view.IView;
+import esiee.info.e3.view.main.IView;
 import java.awt.*;
 import java.util.Objects;
 
@@ -71,7 +71,7 @@ public final class LoadingPage implements IPage {
     g.drawString(text, textX, textY);
 
     if (elapsed > 2200) {
-      context.navigateTo(targetRoute,false);
+      context.navigateTo(targetRoute, false);
     }
   }
 

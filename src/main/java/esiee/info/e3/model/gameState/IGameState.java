@@ -1,4 +1,4 @@
-package esiee.info.e3.model;
+package esiee.info.e3.model.gameState;
 
 import esiee.info.e3.domain.Blind;
 import esiee.info.e3.domain.ShopItem;

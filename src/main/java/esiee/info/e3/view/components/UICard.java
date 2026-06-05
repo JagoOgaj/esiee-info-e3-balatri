@@ -1,9 +1,7 @@
 package esiee.info.e3.view.components;
 
 import esiee.info.e3.domain.Card;
-import esiee.info.e3.view.IView;
-import esiee.info.e3.view.ViewMain;
-
+import esiee.info.e3.view.main.IView;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.util.Objects;

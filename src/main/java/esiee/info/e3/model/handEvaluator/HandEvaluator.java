@@ -1,4 +1,4 @@
-package esiee.info.e3.model;
+package esiee.info.e3.model.handEvaluator;
 
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.enums.Combination;

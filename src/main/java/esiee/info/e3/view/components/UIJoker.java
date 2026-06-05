@@ -1,8 +1,7 @@
 package esiee.info.e3.view.components;
 
 import esiee.info.e3.domain.enums.JokerType;
-import esiee.info.e3.view.ViewMain;
-
+import esiee.info.e3.view.main.ViewMain;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.util.Objects;

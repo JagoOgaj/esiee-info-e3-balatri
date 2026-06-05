@@ -1,9 +1,8 @@
-package esiee.info.e3.model;
+package esiee.info.e3.model.deckManager;
 
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.enums.Rank;
 import esiee.info.e3.domain.enums.Suit;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

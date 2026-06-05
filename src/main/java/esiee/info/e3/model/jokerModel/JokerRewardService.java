@@ -1,4 +1,4 @@
-package esiee.info.e3.model;
+package esiee.info.e3.model.jokerModel;
 
 import esiee.info.e3.domain.enums.JokerRarity;
 import esiee.info.e3.domain.enums.JokerType;

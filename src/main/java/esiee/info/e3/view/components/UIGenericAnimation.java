@@ -1,7 +1,6 @@
 package esiee.info.e3.view.components;
 
-import esiee.info.e3.view.ViewMain;
-
+import esiee.info.e3.view.main.ViewMain;
 import java.awt.*;
 import java.util.Objects;
 import java.util.function.Function;

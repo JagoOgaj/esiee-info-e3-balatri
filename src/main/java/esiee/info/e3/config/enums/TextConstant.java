@@ -98,8 +98,7 @@ public enum TextConstant {
   TEXT_SHOP_REFUND_KEEP("Garder"),
   TEXT_SHOP_ERROR_INVENTORY_FULL("INVENTAIRE PLEIN ! Cliquez sur un Joker à remplacer."),
   TEXT_SHOP_CANCEL_SWAP("ANNULER"),
-  TEXT_SHOP_YOUR_JOKERS("Vos Jokers :"),
-  ;
+  TEXT_SHOP_YOUR_JOKERS("Vos Jokers :");
 
   private final String text;
 

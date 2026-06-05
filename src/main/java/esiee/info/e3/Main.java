@@ -8,13 +8,14 @@ import esiee.info.e3.controller.GameController;
 import esiee.info.e3.controller.IGameController;
 import esiee.info.e3.manager.ISaveManager;
 import esiee.info.e3.manager.SaveManager;
-import esiee.info.e3.model.*;
-import esiee.info.e3.view.*;
+import esiee.info.e3.model.gameModel.GameModel;
+import esiee.info.e3.model.gameState.GameSateEnum;
+import esiee.info.e3.view.main.ViewMain;
 import esiee.info.e3.view.pages.*;
 import java.awt.*;
 
 public class Main {
-  public static void main() {
+  static void main() {
     IGameConfig gameConfig = new GameConfig();
     Font pixelFont = gameConfig.getPixelFont(FontConstant.FONT_BOLD_PIXEL.getPath(), 24f);
     ISaveManager saveManager = new SaveManager(gameConfig);

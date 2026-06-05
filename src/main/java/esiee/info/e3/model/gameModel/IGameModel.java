@@ -1,11 +1,14 @@
-package esiee.info.e3.model;
+package esiee.info.e3.model.gameModel;
 
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.EvaluatedHand;
 import esiee.info.e3.domain.ShopItem;
 import esiee.info.e3.domain.enums.JokerType;
 import esiee.info.e3.domain.enums.Planet;
-import esiee.info.e3.view.IView;
+import esiee.info.e3.model.gameState.IGameState;
+import esiee.info.e3.model.playState.PlayState;
+import esiee.info.e3.model.shopState.ShopState;
+import esiee.info.e3.view.main.IView;
 import java.util.List;
 
 public sealed interface IGameModel permits GameModel {
@@ -49,17 +52,17 @@ public sealed interface IGameModel permits GameModel {
 
   void executeDiscardAction();
 
-  TurnResult executePlayAction();
+  PlayState executePlayAction();
 
   void rollShopItems();
 
-  void executeRerollShopAction();
+  ShopState executeRerollShopAction();
 
-  void executeBuyShopItemAction(int index);
+  ShopState executeBuyShopItemAction(int index);
 
-  void executeSwapJokerAndBuyAction(JokerType oldJoker, int shopIndex);
+  ShopState executeSwapJokerAndBuyAction(JokerType oldJoker, int shopIndex);
 
-  void executeRefundShopItemAction(ShopItem si);
+  ShopState executeRefundShopItemAction(ShopItem si);
 
   void executeLeaveShopAction();
 

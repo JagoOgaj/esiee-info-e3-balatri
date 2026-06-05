@@ -1,10 +1,9 @@
-package esiee.info.e3.view;
+package esiee.info.e3.view.main;
 
 import esiee.info.e3.config.enums.OverlayType;
 import esiee.info.e3.config.enums.RoutesEnum;
 import esiee.info.e3.controller.IGameController;
 import esiee.info.e3.domain.GameSnapshot;
-
 import java.awt.*;
 import java.awt.image.BufferedImage;
 

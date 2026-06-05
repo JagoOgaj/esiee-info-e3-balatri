@@ -1,6 +1,5 @@
-package esiee.info.e3.model;
+package esiee.info.e3.model.gameModel;
 
-import esiee.info.e3.config.enums.ExceptionConstant;
 import esiee.info.e3.config.enums.TextConstant;
 import esiee.info.e3.domain.Blind;
 import esiee.info.e3.domain.Card;
@@ -10,7 +9,18 @@ import esiee.info.e3.domain.ShopItem;
 import esiee.info.e3.domain.enums.BlindConstraint;
 import esiee.info.e3.domain.enums.JokerType;
 import esiee.info.e3.domain.enums.Planet;
-import esiee.info.e3.view.IView;
+import esiee.info.e3.model.deckManager.DeckManager;
+import esiee.info.e3.model.deckManager.IDeckManager;
+import esiee.info.e3.model.gameState.GameState;
+import esiee.info.e3.model.gameState.IGameState;
+import esiee.info.e3.model.handEvaluator.HandEvaluator;
+import esiee.info.e3.model.handEvaluator.IHandEvaluator;
+import esiee.info.e3.model.jokerModel.JokerRewardService;
+import esiee.info.e3.model.playState.*;
+import esiee.info.e3.model.scoreCalculator.IScoreCalculator;
+import esiee.info.e3.model.scoreCalculator.ScoreCalculator;
+import esiee.info.e3.model.shopState.*;
+import esiee.info.e3.view.main.IView;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -73,12 +83,12 @@ public final class GameModel implements IGameModel {
   }
 
   @Override
-  public TurnResult executePlayAction() {
+  public PlayState executePlayAction() {
     if (this.isEmptySelectedCards()) {
-      return new TurnResultError(TextConstant.TEXT_CONSTANT_ERROR_PLAY_EMPTY.getText());
+      return new PlayStateError(TextConstant.TEXT_CONSTANT_ERROR_PLAY_EMPTY.getText());
     }
     if (this.state.getHandsLeft() <= 0)
-      return new TurnResultError(TextConstant.TEXT_CONSTANT_NO_HAND_AVAILABLE.getText());
+      return new PlayStateError(TextConstant.TEXT_CONSTANT_NO_HAND_AVAILABLE.getText());
 
     try {
       var scoreGained = this.playHand(this.getSelectedCards());
@@ -120,20 +130,20 @@ public final class GameModel implements IGameModel {
 
           this.rollShopItems();
           this.notifyObservers();
-          return new TurnResultBlindBeaten(totalMoney, msg);
+          return new PlayStateBlindBeaten(totalMoney, msg);
         } else {
           this.notifyObservers();
-          return new TurnResultGameWon();
+          return new PlayStateGameWon();
         }
       } else if (this.state.getHandsLeft() <= 0) {
         this.notifyObservers();
-        return new TurnResultGameLost();
+        return new PlayStateGameLost();
       } else {
         this.notifyObservers();
-        return new TurnResultHandPlayed(scoreGained);
+        return new PlayStateHandPlayed(scoreGained);
       }
     } catch (Exception e) {
-      return new TurnResultFailure(e);
+      return new PlayStateFailure(e);
     }
   }
 
@@ -153,26 +163,27 @@ public final class GameModel implements IGameModel {
   }
 
   @Override
-  public void executeRerollShopAction() {
+  public ShopState executeRerollShopAction() {
     if (this.state.getMoney() < 5) {
-      throw new IllegalStateException(ExceptionConstant.ERROR_NO_MONEY_REROLL.name());
+      return new ShopErrorNoMoneyBuy();
     }
     this.state.spendMoney(5);
     this.rollShopItems();
     this.notifyObservers();
+    return new ShopSuccess();
   }
 
   @Override
-  public void executeBuyShopItemAction(int index) {
+  public ShopState executeBuyShopItemAction(int index) {
     var items = this.state.getShopItems();
-    if (index < 0 || index >= items.size()) return;
+    if (index < 0 || index >= items.size()) return new ShopErrorInvalidItem();
     var si = items.get(index);
 
     if (this.state.getMoney() < si.price()) {
-      throw new IllegalStateException(ExceptionConstant.ERROR_NO_MONEY_BUY.name());
+      return new ShopErrorNoMoneyBuy();
     }
     if (this.state.isJokersFull()) {
-      throw new IllegalStateException(ExceptionConstant.ERROR_INVENTORY_FULL.name());
+      return new ShopErrorInventoryFull();
     }
     this.state.spendMoney(si.price());
     this.state.addJoker(si.item());
@@ -183,12 +194,13 @@ public final class GameModel implements IGameModel {
     this.state.getSessionPurchases().add(si);
 
     this.notifyObservers();
+    return new ShopSuccess();
   }
 
   @Override
-  public void executeSwapJokerAndBuyAction(JokerType oldJoker, int shopIndex) {
+  public ShopState executeSwapJokerAndBuyAction(JokerType oldJoker, int shopIndex) {
     var items = this.state.getShopItems();
-    if (shopIndex < 0 || shopIndex >= items.size()) return;
+    if (shopIndex < 0 || shopIndex >= items.size()) return new ShopErrorInvalidItem();
     var si = items.get(shopIndex);
 
     this.state.spendMoney(si.price());
@@ -202,10 +214,11 @@ public final class GameModel implements IGameModel {
     this.state.getSessionPurchases().add(new ShopItem(si.item(), si.price(), oldJoker));
 
     this.notifyObservers();
+    return new ShopSuccess();
   }
 
   @Override
-  public void executeRefundShopItemAction(ShopItem si) {
+  public ShopState executeRefundShopItemAction(ShopItem si) {
     this.state.addMoney(si.price());
     this.state.removeJoker(si.item());
 
@@ -220,6 +233,7 @@ public final class GameModel implements IGameModel {
     this.state.setShopItems(updatedItems);
 
     this.notifyObservers();
+    return new ShopSuccess();
   }
 
   @Override
@@ -357,7 +371,7 @@ public final class GameModel implements IGameModel {
 
   private void processCardsExchange(List<Card> selected) {
     this.deckManager.discard(selected);
-      selected.forEach(this.currentHand::remove);
+    selected.forEach(this.currentHand::remove);
 
     if (this.state.getCurrentConstraint() == BlindConstraint.THE_HOOK) {
       int toDiscard = Math.min(2, this.currentHand.size());
@@ -382,8 +396,7 @@ public final class GameModel implements IGameModel {
   }
 
   private void validateSelection(List<Card> selected) {
-    if (selected.isEmpty()) throw new IllegalArgumentException("Empty selection");
-    if (selected.size() > 5) throw new IllegalArgumentException("Max 5 cards");
+    if (selected.isEmpty() || selected.size() > 5) throw new IllegalArgumentException();
   }
 
   @Override
