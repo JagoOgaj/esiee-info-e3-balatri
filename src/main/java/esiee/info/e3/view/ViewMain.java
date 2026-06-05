@@ -3,8 +3,8 @@ package esiee.info.e3.view;
 import com.github.forax.zen.Application;
 import com.github.forax.zen.PointerEvent;
 import com.github.forax.zen.ScreenInfo;
+import esiee.info.e3.config.enums.OverlayType;
 import esiee.info.e3.config.enums.RoutesEnum;
-import esiee.info.e3.config.enums.TextConstant;
 import esiee.info.e3.controller.IGameController;
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.EvaluatedHand;
@@ -26,7 +26,6 @@ public final class ViewMain implements IView {
   private final Map<RoutesEnum, IPage> routes = new HashMap<>();
   private final Map<String, BufferedImage> imageCache = new HashMap<>();
   private final Font gameFont;
-  private IGameController controller;
   private IPage currentPage;
   private ScreenInfo lastScreenInfo;
   private IGameState cachedState;
@@ -42,10 +41,7 @@ public final class ViewMain implements IView {
     this.routes.put(Objects.requireNonNull(route), Objects.requireNonNull(page));
   }
 
-  public void navigateTo(RoutesEnum route) {
-    this.navigateTo(Objects.requireNonNull(route), false);
-  }
-
+  @Override
   public void navigateTo(RoutesEnum route, boolean withLoading) {
     Objects.requireNonNull(route);
     if (withLoading) {
@@ -78,7 +74,7 @@ public final class ViewMain implements IView {
 
   @Override
   public void setController(IGameController controller) {
-    this.controller = Objects.requireNonNull(controller);
+    // this.controller = Objects.requireNonNull(controller);
   }
 
   @Override
@@ -132,6 +128,7 @@ public final class ViewMain implements IView {
     }
   }
 
+  @Override
   public BufferedImage getImage(String path) {
     Objects.requireNonNull(path);
     return this.imageCache.computeIfAbsent(
@@ -145,42 +142,15 @@ public final class ViewMain implements IView {
         });
   }
 
+  @Override
   public Font getGameFont() {
     return this.gameFont;
   }
 
   @Override
-  public void showMessage(String message) {
+  public void showOverlay(OverlayType type, String message, Runnable onClose) {
+    Objects.requireNonNull(type);
     Objects.requireNonNull(message);
-    Objects.requireNonNull(this.currentPage).showOverlay(message, Color.WHITE, null);
-  }
-
-  @Override
-  public void showError(String error) {
-    Objects.requireNonNull(error);
-    Objects.requireNonNull(this.currentPage).showOverlay(error, new Color(255, 80, 80), null);
-  }
-
-  @Override
-  public void showGameOver(boolean victory, long finalScore) {
-    var msg =
-        victory
-            ? TextConstant.TEXT_CONSTANT_VICTORY.getText() + finalScore
-            : TextConstant.TEXT_CONSTANT_DEFEAT.getText() + finalScore;
-    var color = victory ? new Color(255, 215, 0) : new Color(255, 50, 50);
-
-    Objects.requireNonNull(this.currentPage)
-        .showOverlay(
-            msg,
-            color,
-            () -> {
-              controller.resetGame();
-              navigateTo(RoutesEnum.HOME);
-            });
-  }
-
-  @Override
-  public void showMenu() {
-    this.navigateTo(RoutesEnum.HOME);
+    Objects.requireNonNull(this.currentPage).showOverlay(message, type.getColor(), onClose);
   }
 }

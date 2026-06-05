@@ -7,7 +7,7 @@ import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.GameSnapshot;
 import esiee.info.e3.domain.enums.Rank;
 import esiee.info.e3.domain.enums.Suit;
-import esiee.info.e3.view.ViewMain;
+import esiee.info.e3.view.IView;
 import esiee.info.e3.view.components.UIButton;
 import esiee.info.e3.view.components.UICard;
 import esiee.info.e3.view.components.UIContainer;
@@ -24,10 +24,10 @@ public final class HomePage implements IPage {
   private final UIContainer root;
   private final List<BackgroundCard> backgroundCards;
   private final Random random;
-  private final ViewMain context;
+  private final IView context;
   private boolean initialized;
 
-  public HomePage(ViewMain context, IGameController controller) {
+  public HomePage(IView context, IGameController controller) {
     this.context = Objects.requireNonNull(context);
     IGameController controller1 = Objects.requireNonNull(controller);
     this.backgroundCards = new ArrayList<>();
@@ -106,10 +106,7 @@ public final class HomePage implements IPage {
         new UIButton(
             TextConstant.TEXT_CONSTANT_CLASSIC_MOD.getText(),
             classicBtnStyle,
-            () -> {
-              context.navigateTo(RoutesEnum.GAME, true);
-              controller.startGame(false);
-            }),
+            () -> controller.startGame(false)),
         4,
         0,
         0.12,
@@ -119,10 +116,7 @@ public final class HomePage implements IPage {
         new UIButton(
             TextConstant.TEXT_CONSTANT_INFINITY_MOD.getText(),
             infiniteBtnStyle,
-            () -> {
-              context.navigateTo(RoutesEnum.GAME, true);
-              controller.startGame(true);
-            }),
+            () -> controller.startGame(true)),
         5,
         0,
         0.12,
@@ -130,9 +124,7 @@ public final class HomePage implements IPage {
 
     this.root.addComponent(
         new UIButton(
-            TextConstant.TEXT_CONSTANT_PARTIES_LISTING.getText(),
-            btnStyle,
-            () -> context.navigateTo(RoutesEnum.SAVES, true)),
+            TextConstant.TEXT_CONSTANT_PARTIES_LISTING.getText(), btnStyle, () -> controller.goTo(RoutesEnum.SAVES, true)),
         6,
         0,
         0.12,

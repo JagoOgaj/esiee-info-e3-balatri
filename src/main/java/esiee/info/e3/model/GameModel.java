@@ -134,7 +134,15 @@ public final class GameModel implements IGameModel {
     }
   }
 
-  @Override
+    @Override
+    public boolean isGameActive() {
+        return this.state.getCurrentScore() > 0
+                || this.state.getHandsLeft() < 4
+                || this.state.getDiscardsLeft() < 3
+                || this.state.getCurrentBlindIndex() > 0;
+  }
+
+    @Override
   public void startRound() {
     this.deckManager.shuffle();
     this.currentHand.clear();
@@ -245,14 +253,6 @@ public final class GameModel implements IGameModel {
   }
 
   @Override
-  public boolean removeJoker(JokerType joker) {
-    Objects.requireNonNull(joker);
-    var res = this.state.removeJoker(joker);
-    if (res) this.notifyObservers();
-    return res;
-  }
-
-  @Override
   public void discardHand(List<Card> selected) {
     if (this.state.getDiscardsLeft() <= 0) throw new IllegalStateException();
     var list = Objects.requireNonNull(selected);
@@ -357,6 +357,8 @@ public final class GameModel implements IGameModel {
   public IGameState getState() {
     return this.state;
   }
+
+
 
   @Override
   public List<Card> getHand() {

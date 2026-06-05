@@ -105,7 +105,7 @@ public final class ShopPage implements IPage {
             () -> {
               this.currentShopItems.clear();
               this.sessionPurchases.clear();
-              this.context.navigateTo(RoutesEnum.GAME);
+              this.context.navigateTo(RoutesEnum.GAME, false);
             }),
         70,
         75,

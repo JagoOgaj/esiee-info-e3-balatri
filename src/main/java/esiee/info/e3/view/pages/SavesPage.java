@@ -177,10 +177,7 @@ public final class SavesPage implements IPage {
               new UIButton(
                   TextConstant.TEXT_SAVES_RESUME.getText(),
                   btnStyle,
-                  () -> {
-                    context.navigateTo(RoutesEnum.GAME, true);
-                    controller.loadGameFromJson(save.id());
-                  });
+                  () -> controller.loadGameFromJson(save.id()));
           slotRow.addComponent(resumeBtn, 0, 86, 1.0, 0.12);
         } else {
           slotRow.addComponent(
@@ -233,7 +230,7 @@ public final class SavesPage implements IPage {
         new UIButton(
             TextConstant.TEXT_SAVES_RETURN.getText(),
             backStyle,
-            () -> context.navigateTo(RoutesEnum.HOME)),
+            () -> controller.goTo(RoutesEnum.HOME, false)),
         10,
         40,
         0.80,

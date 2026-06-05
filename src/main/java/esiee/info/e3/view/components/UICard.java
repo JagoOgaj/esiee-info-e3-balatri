@@ -1,6 +1,7 @@
 package esiee.info.e3.view.components;
 
 import esiee.info.e3.domain.Card;
+import esiee.info.e3.view.IView;
 import esiee.info.e3.view.ViewMain;
 
 import java.awt.*;
@@ -13,7 +14,7 @@ public final class UICard implements UIComponent {
   private final boolean isFaceUp;
   private final Supplier<Boolean> isSelected;
   private final Runnable onClick;
-  private final ViewMain context;
+  private final IView context;
   private final double ratio;
 
   public UICard(
@@ -21,7 +22,7 @@ public final class UICard implements UIComponent {
       boolean isFaceUp,
       Supplier<Boolean> isSelected,
       Runnable onClick,
-      ViewMain context,
+      IView context,
       double ratio) {
     this.card = card;
     this.isFaceUp = isFaceUp;

@@ -3,16 +3,16 @@ package esiee.info.e3.view.pages;
 import esiee.info.e3.config.enums.RoutesEnum;
 import esiee.info.e3.config.enums.TextConstant;
 import esiee.info.e3.domain.GameSnapshot;
-import esiee.info.e3.view.ViewMain;
+import esiee.info.e3.view.IView;
 import java.awt.*;
 import java.util.Objects;
 
 public final class LoadingPage implements IPage {
-  private final ViewMain context;
+  private final IView context;
   private final RoutesEnum targetRoute;
   private final long startTime;
 
-  public LoadingPage(ViewMain context, RoutesEnum targetRoute) {
+  public LoadingPage(IView context, RoutesEnum targetRoute) {
     this.context = Objects.requireNonNull(context);
     this.targetRoute = Objects.requireNonNull(targetRoute);
     this.startTime = System.currentTimeMillis();
@@ -62,14 +62,16 @@ public final class LoadingPage implements IPage {
     var textX =
         (int)
             (sw / 2
-                - (float) metrics.stringWidth(TextConstant.TEXT_CONSTANT_LOADING.getText() + " " + "...")
+                - (float)
+                        metrics.stringWidth(
+                            TextConstant.TEXT_CONSTANT_LOADING.getText() + " " + "...")
                     / 2);
-     var textY = centerY + cardH + 70;
+    var textY = centerY + cardH + 70;
 
     g.drawString(text, textX, textY);
 
     if (elapsed > 2200) {
-      context.navigateTo(targetRoute, false);
+      context.navigateTo(targetRoute,false);
     }
   }
 

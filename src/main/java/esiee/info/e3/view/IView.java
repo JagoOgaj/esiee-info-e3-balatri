@@ -1,7 +1,12 @@
 package esiee.info.e3.view;
 
+import esiee.info.e3.config.enums.OverlayType;
+import esiee.info.e3.config.enums.RoutesEnum;
 import esiee.info.e3.controller.IGameController;
 import esiee.info.e3.domain.GameSnapshot;
+
+import java.awt.*;
+import java.awt.image.BufferedImage;
 
 public sealed interface IView permits ViewMain {
   void setController(IGameController controller);
@@ -10,13 +15,13 @@ public sealed interface IView permits ViewMain {
 
   void start();
 
-  void showError(String message);
+  Font getGameFont();
 
-  void showMessage(String message);
-
-  void showGameOver(boolean won, long finalScore);
-
-  void showMenu();
+  BufferedImage getImage(String path);
 
   void onModelUpdated(GameSnapshot snapshot);
+
+  void navigateTo(RoutesEnum route, boolean withLoading);
+
+  void showOverlay(OverlayType type, String message, Runnable onClose);
 }

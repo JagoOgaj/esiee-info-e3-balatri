@@ -32,8 +32,6 @@ public sealed interface IGameModel permits GameModel {
 
   String getJokerRarityLabel(JokerType joker);
 
-  boolean removeJoker(JokerType joker);
-
   void discardHand(List<Card> selected);
 
   Planet grantRandomPlanetReward();
@@ -51,4 +49,7 @@ public sealed interface IGameModel permits GameModel {
   void executeDiscardAction();
 
   TurnResult executePlayAction();
+
+  boolean isGameActive();
+
 }

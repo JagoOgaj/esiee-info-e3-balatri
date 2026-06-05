@@ -706,7 +706,7 @@ public final class GamePage implements IPage {
       this.onFullScreenClose =
           () -> {
             if (o != null) o.run();
-            this.context.navigateTo(RoutesEnum.SHOP);
+            this.controller.goTo(RoutesEnum.SHOP, false);
           };
     } else if (m.startsWith("[REWARD:")) {
       this.isRewardOverlay = true;
