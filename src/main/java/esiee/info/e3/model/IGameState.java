@@ -1,6 +1,7 @@
 package esiee.info.e3.model;
 
 import esiee.info.e3.domain.Blind;
+import esiee.info.e3.domain.ShopItem;
 import esiee.info.e3.domain.enums.BlindConstraint;
 import esiee.info.e3.domain.enums.Combination;
 import esiee.info.e3.domain.enums.JokerType;
@@ -87,4 +88,12 @@ public sealed interface IGameState permits GameState {
   int getDeckSize();
 
   void setDeckSize(int deckSize);
+
+  void clearShopAndPurchases();
+
+  List<ShopItem> getSessionPurchases();
+
+  List<ShopItem> getShopItems();
+
+  void setShopItems(List<ShopItem> items);
 }

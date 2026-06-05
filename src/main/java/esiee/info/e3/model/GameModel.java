@@ -1,10 +1,12 @@
 package esiee.info.e3.model;
 
+import esiee.info.e3.config.enums.ExceptionConstant;
 import esiee.info.e3.config.enums.TextConstant;
 import esiee.info.e3.domain.Blind;
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.EvaluatedHand;
 import esiee.info.e3.domain.GameSnapshot;
+import esiee.info.e3.domain.ShopItem;
 import esiee.info.e3.domain.enums.BlindConstraint;
 import esiee.info.e3.domain.enums.JokerType;
 import esiee.info.e3.domain.enums.Planet;
@@ -79,7 +81,7 @@ public final class GameModel implements IGameModel {
       return new TurnResultError(TextConstant.TEXT_CONSTANT_NO_HAND_AVAILABLE.getText());
 
     try {
-      var scoreGained = this.playHand(new ArrayList<>(this.getSelectedCards()));
+      var scoreGained = this.playHand(this.getSelectedCards());
       this.resetSelectedCards();
 
       if (this.state.getCurrentScore() >= this.state.getCurrentBlind().score()) {
@@ -96,7 +98,7 @@ public final class GameModel implements IGameModel {
           String constraintText =
               (constraint != null && !constraint.name().equals("NONE"))
                   ? "\n"
-                      + TextConstant.TEXT_CONSTANT_PREFIX_CONSTRAINT
+                      + TextConstant.TEXT_CONSTANT_PREFIX_CONSTRAINT.getText()
                       + " "
                       + constraint.getDescription()
                   : "";
@@ -116,6 +118,7 @@ public final class GameModel implements IGameModel {
                       discardsBonus,
                       totalMoney);
 
+          this.rollShopItems();
           this.notifyObservers();
           return new TurnResultBlindBeaten(totalMoney, msg);
         } else {
@@ -134,15 +137,106 @@ public final class GameModel implements IGameModel {
     }
   }
 
-    @Override
-    public boolean isGameActive() {
-        return this.state.getCurrentScore() > 0
-                || this.state.getHandsLeft() < 4
-                || this.state.getDiscardsLeft() < 3
-                || this.state.getCurrentBlindIndex() > 0;
+  @Override
+  public void rollShopItems() {
+    List<ShopItem> items = new ArrayList<>();
+    var availableJokers = new ArrayList<>(List.of(JokerType.values()));
+    availableJokers.removeAll(this.state.getActiveJokers());
+
+    var random = ThreadLocalRandom.current();
+    for (var i = 0; i < 4 && !availableJokers.isEmpty(); i++) {
+      var j = availableJokers.remove(random.nextInt(availableJokers.size()));
+      var price = 5 + random.nextInt(6);
+      items.add(new ShopItem(j, price));
+    }
+    this.state.setShopItems(items);
   }
 
-    @Override
+  @Override
+  public void executeRerollShopAction() {
+    if (this.state.getMoney() < 5) {
+      throw new IllegalStateException(ExceptionConstant.ERROR_NO_MONEY_REROLL.name());
+    }
+    this.state.spendMoney(5);
+    this.rollShopItems();
+    this.notifyObservers();
+  }
+
+  @Override
+  public void executeBuyShopItemAction(int index) {
+    var items = this.state.getShopItems();
+    if (index < 0 || index >= items.size()) return;
+    var si = items.get(index);
+
+    if (this.state.getMoney() < si.price()) {
+      throw new IllegalStateException(ExceptionConstant.ERROR_NO_MONEY_BUY.name());
+    }
+    if (this.state.isJokersFull()) {
+      throw new IllegalStateException(ExceptionConstant.ERROR_INVENTORY_FULL.name());
+    }
+    this.state.spendMoney(si.price());
+    this.state.addJoker(si.item());
+
+    var updatedItems = new ArrayList<>(items);
+    updatedItems.remove(index);
+    this.state.setShopItems(updatedItems);
+    this.state.getSessionPurchases().add(si);
+
+    this.notifyObservers();
+  }
+
+  @Override
+  public void executeSwapJokerAndBuyAction(JokerType oldJoker, int shopIndex) {
+    var items = this.state.getShopItems();
+    if (shopIndex < 0 || shopIndex >= items.size()) return;
+    var si = items.get(shopIndex);
+
+    this.state.spendMoney(si.price());
+    this.state.removeJoker(oldJoker);
+    this.state.addJoker(si.item());
+
+    var updatedItems = new ArrayList<>(items);
+    updatedItems.remove(shopIndex);
+    this.state.setShopItems(updatedItems);
+
+    this.state.getSessionPurchases().add(new ShopItem(si.item(), si.price(), oldJoker));
+
+    this.notifyObservers();
+  }
+
+  @Override
+  public void executeRefundShopItemAction(ShopItem si) {
+    this.state.addMoney(si.price());
+    this.state.removeJoker(si.item());
+
+    if (si.replacedJoker() != null) {
+      this.state.addJoker(si.replacedJoker());
+    }
+
+    this.state.getSessionPurchases().remove(si);
+
+    var updatedItems = new ArrayList<>(this.state.getShopItems());
+    updatedItems.add(new ShopItem(si.item(), si.price()));
+    this.state.setShopItems(updatedItems);
+
+    this.notifyObservers();
+  }
+
+  @Override
+  public void executeLeaveShopAction() {
+    this.state.clearShopAndPurchases();
+    this.notifyObservers();
+  }
+
+  @Override
+  public boolean isGameActive() {
+    return this.state.getCurrentScore() > 0
+        || this.state.getHandsLeft() < 4
+        || this.state.getDiscardsLeft() < 3
+        || this.state.getCurrentBlindIndex() > 0;
+  }
+
+  @Override
   public void startRound() {
     this.deckManager.shuffle();
     this.currentHand.clear();
@@ -262,9 +356,8 @@ public final class GameModel implements IGameModel {
   }
 
   private void processCardsExchange(List<Card> selected) {
-    var cardsToDiscard = new ArrayList<>(selected);
-    this.deckManager.discard(cardsToDiscard);
-    cardsToDiscard.forEach(this.currentHand::remove);
+    this.deckManager.discard(selected);
+      selected.forEach(this.currentHand::remove);
 
     if (this.state.getCurrentConstraint() == BlindConstraint.THE_HOOK) {
       int toDiscard = Math.min(2, this.currentHand.size());
@@ -357,8 +450,6 @@ public final class GameModel implements IGameModel {
   public IGameState getState() {
     return this.state;
   }
-
-
 
   @Override
   public List<Card> getHand() {

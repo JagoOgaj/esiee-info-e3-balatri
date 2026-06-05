@@ -2,6 +2,7 @@ package esiee.info.e3.model;
 
 import esiee.info.e3.domain.Card;
 import esiee.info.e3.domain.EvaluatedHand;
+import esiee.info.e3.domain.ShopItem;
 import esiee.info.e3.domain.enums.JokerType;
 import esiee.info.e3.domain.enums.Planet;
 import esiee.info.e3.view.IView;
@@ -50,6 +51,17 @@ public sealed interface IGameModel permits GameModel {
 
   TurnResult executePlayAction();
 
-  boolean isGameActive();
+  void rollShopItems();
 
+  void executeRerollShopAction();
+
+  void executeBuyShopItemAction(int index);
+
+  void executeSwapJokerAndBuyAction(JokerType oldJoker, int shopIndex);
+
+  void executeRefundShopItemAction(ShopItem si);
+
+  void executeLeaveShopAction();
+
+  boolean isGameActive();
 }

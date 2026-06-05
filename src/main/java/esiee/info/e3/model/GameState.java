@@ -2,6 +2,7 @@ package esiee.info.e3.model;
 
 import esiee.info.e3.config.enums.TextConstant;
 import esiee.info.e3.domain.Blind;
+import esiee.info.e3.domain.ShopItem;
 import esiee.info.e3.domain.enums.BlindConstraint;
 import esiee.info.e3.domain.enums.Combination;
 import esiee.info.e3.domain.enums.JokerType;
@@ -11,9 +12,10 @@ import java.util.*;
 public non-sealed class GameState implements IGameState {
   private final Map<Combination, Integer> handLevels;
   private final List<Blind> blinds;
-  private final Set<Combination> playedCombinationsInCurrentBlind;
   private final Set<Planet> wonPlanets;
   private final Set<JokerType> activeJokers;
+  private final List<ShopItem> currentShopItems;
+  private final List<ShopItem> sessionPurchases;
   private long currentScore;
   private int handsLeft;
   private int discardsLeft;
@@ -28,9 +30,10 @@ public non-sealed class GameState implements IGameState {
   public GameState(List<Blind> blinds) {
     this.handLevels = new EnumMap<>(Combination.class);
     this.blinds = Objects.requireNonNull(blinds);
-    this.playedCombinationsInCurrentBlind = new HashSet<>();
     this.wonPlanets = new HashSet<>();
     this.activeJokers = new LinkedHashSet<>();
+    this.currentShopItems = new ArrayList<>();
+    this.sessionPurchases = new ArrayList<>();
     this.money = 4;
     this.infiniteMode = false;
     this.currentConstraint = BlindConstraint.NONE;
@@ -44,7 +47,9 @@ public non-sealed class GameState implements IGameState {
     if (this.infiniteMode && this.loopCount > 0) {
       var scaledScore = baseBlind.score() * (long) Math.pow(10, this.loopCount);
       return new Blind(
-          baseBlind.id(), baseBlind.name() + TextConstant.TEXT_CONSTANT_LOOP.getText().formatted(this.loopCount), scaledScore);
+          baseBlind.id(),
+          baseBlind.name() + TextConstant.TEXT_CONSTANT_LOOP.getText().formatted(this.loopCount),
+          scaledScore);
     }
     return baseBlind;
   }
@@ -68,7 +73,6 @@ public non-sealed class GameState implements IGameState {
     this.currentScore = 0;
     this.handsLeft = 4;
     this.discardsLeft = 3;
-    this.playedCombinationsInCurrentBlind.clear();
   }
 
   @Override
@@ -78,6 +82,8 @@ public non-sealed class GameState implements IGameState {
     this.currentSaveId = null;
     this.loopCount = 0;
     this.money = 4;
+    this.currentShopItems.clear();
+    this.sessionPurchases.clear();
     this.resetForNewBlind();
     for (var combination : Combination.values()) {
       this.handLevels.put(combination, 1);
@@ -85,6 +91,28 @@ public non-sealed class GameState implements IGameState {
     this.wonPlanets.clear();
     this.activeJokers.clear();
     this.currentConstraint = BlindConstraint.NONE;
+  }
+
+  @Override
+  public List<ShopItem> getShopItems() {
+    return this.currentShopItems;
+  }
+
+  @Override
+  public void setShopItems(List<ShopItem> items) {
+    this.currentShopItems.clear();
+    this.currentShopItems.addAll(items);
+  }
+
+  @Override
+  public List<ShopItem> getSessionPurchases() {
+    return this.sessionPurchases;
+  }
+
+  @Override
+  public void clearShopAndPurchases() {
+    this.currentShopItems.clear();
+    this.sessionPurchases.clear();
   }
 
   @Override

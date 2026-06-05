@@ -38,7 +38,7 @@ public class Main {
 
     view.addRoute(RoutesEnum.HOME, new HomePage(view, controller));
     view.addRoute(RoutesEnum.GAME, new GamePage(view, controller));
-    view.addRoute(RoutesEnum.SHOP, new ShopPage(view));
+    view.addRoute(RoutesEnum.SHOP, new ShopPage(view, controller));
     view.addRoute(RoutesEnum.SAVES, new SavesPage(view, controller, saveManager));
     view.navigateTo(RoutesEnum.HOME, false);
 

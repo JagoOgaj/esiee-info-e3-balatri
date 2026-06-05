@@ -3,7 +3,7 @@ package esiee.info.e3.domain;
 import esiee.info.e3.domain.enums.JokerType;
 import java.util.Objects;
 
-public record ShopItem(Object item, int price, JokerType replacedJoker) {
+public record ShopItem(JokerType item, int price, JokerType replacedJoker) {
 
   public ShopItem {
     Objects.requireNonNull(item);
@@ -12,7 +12,7 @@ public record ShopItem(Object item, int price, JokerType replacedJoker) {
     }
   }
 
-  public ShopItem(Object item, int price) {
+  public ShopItem(JokerType item, int price) {
     this(item, price, null);
   }
 }

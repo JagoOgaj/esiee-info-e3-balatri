@@ -232,14 +232,28 @@ public final class GamePage implements IPage {
         new UIText(
             () -> {
               if (this.currentState != null && this.currentState.isInfiniteMode()) {
-                long highScore = this.controller.getHighScore();
-                return TextConstant.TEXT_CONSTANT_HIGHT_SCORE.getText() + highScore;
+                return TextConstant.TEXT_CONSTANT_HIGHT_SCORE.getText();
               }
               return "";
             },
             previewStyle),
         20,
-        78,
+        76,
+        0.05,
+        0.30
+    );
+
+    area.addComponent(
+        new UIText(
+            () -> {
+              if (this.currentState != null && this.currentState.isInfiniteMode()) {
+                return String.valueOf(this.controller.getHighScore());
+              }
+              return "";
+            },
+            previewStyle),
+        22,
+        72,
         0.05,
         0.30);
   }
