@@ -1,12 +1,14 @@
 package esiee.info.e3.domain;
 
-import esiee.info.e3.model.GameState;
-
+import esiee.info.e3.model.gameState.IGameState;
 import java.util.List;
+import java.util.Objects;
 
 public record GameSnapshot(
-        GameState state,
-        List<Card> hand,
-        List<Card> selectedCards,
-        EvaluatedHand evaluation
-) {}
+    IGameState state, List<Card> hand, List<Card> selectedCards, EvaluatedHand evaluation) {
+  public GameSnapshot {
+    Objects.requireNonNull(state);
+    Objects.requireNonNull(hand);
+    Objects.requireNonNull(selectedCards);
+  }
+}

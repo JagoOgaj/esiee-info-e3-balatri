@@ -16,7 +16,7 @@ public enum Combination {
   private final int basicChips;
   private final int multiplier;
 
-  private Combination(String label, String description, int basicChips, int multiplier) {
+  Combination(String label, String description, int basicChips, int multiplier) {
     this.label = label;
     this.description = description;
     this.basicChips = basicChips;

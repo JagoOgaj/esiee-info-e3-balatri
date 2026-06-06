@@ -1,6 +1,5 @@
 package esiee.info.e3.view.components;
 
-import esiee.info.e3.view.interfaces.UIComponent;
 import esiee.info.e3.view.utils.UIStyle;
 import java.awt.*;
 import java.util.Objects;
@@ -62,7 +61,4 @@ public record UIText(
   public boolean handlePointerClick(int mx, int my, int x, int y, int w, int h) {
     return false;
   }
-
-  @Override
-  public void handlePointerMove(int mx, int my, int x, int y, int w, int h) {}
 }

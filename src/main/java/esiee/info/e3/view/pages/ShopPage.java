@@ -1,370 +1,518 @@
 package esiee.info.e3.view.pages;
 
-import esiee.info.e3.controller.GameController;
+import esiee.info.e3.config.enums.TextConstant;
+import esiee.info.e3.controller.IGameController;
 import esiee.info.e3.domain.GameSnapshot;
-import esiee.info.e3.domain.enums.JokerType;
-import esiee.info.e3.domain.enums.Planet;
-import esiee.info.e3.model.GameState;
-import esiee.info.e3.view.ViewMain;
+import esiee.info.e3.domain.ShopItem;
+import esiee.info.e3.model.gameState.IGameState;
 import esiee.info.e3.view.components.UIButton;
 import esiee.info.e3.view.components.UIContainer;
-import esiee.info.e3.view.components.UIText;
 import esiee.info.e3.view.components.UIJoker;
-import esiee.info.e3.view.interfaces.IPage;
+import esiee.info.e3.view.components.UIText;
+import esiee.info.e3.view.main.ViewMain;
 import esiee.info.e3.view.utils.UIStyle;
-
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 
-public class ShopPage implements IPage {
-    private final ViewMain context;
-    private final GameController controller;
-    private GameState currentState;
+public final class ShopPage implements IPage {
+  private final ViewMain context;
+  private final IGameController controller;
+  private final double CARD_RATIO;
+  private IGameState currentState;
+  private UIContainer rootContainer;
+  private UIContainer shopItemsContainer;
+  private UIContainer inventoryContainer;
+  private UIContainer swapModalContainer;
+  private UIContainer previewModalContainer;
+  private String errorMessage;
+  private long errorMessageTime;
 
-    private UIContainer rootContainer;
-    private UIContainer shopItemsContainer;
-    private UIContainer inventoryContainer;
+  public ShopPage(ViewMain context, IGameController controller) {
+    this.context = Objects.requireNonNull(context);
+    this.controller = Objects.requireNonNull(controller);
 
-    private record ShopItem(Object item, int price, JokerType replacedJoker) {
-        public ShopItem(Object item, int price) {
-            this(item, price, null);
-        }
+    this.CARD_RATIO = 71.0 / 95.0;
+    this.errorMessage = null;
+    this.errorMessageTime = 0;
+
+    this.buildLayout();
+  }
+
+  private void buildLayout() {
+    var rootStyle = new UIStyle.Builder().bg(new Color(25, 35, 45)).build();
+    this.rootContainer = new UIContainer(100, 100, rootStyle);
+
+    var titleStyle =
+        new UIStyle.Builder()
+            .text(Color.ORANGE)
+            .font(this.context.getGameFont().deriveFont(36f))
+            .shadow(Color.BLACK, 3)
+            .build();
+    this.rootContainer.addComponent(
+        new UIText(TextConstant.TEXT_SHOP_TITLE.getText(), titleStyle), 2, 5, 0.1, 0.4);
+
+    var moneyStyle =
+        new UIStyle.Builder()
+            .text(Color.YELLOW)
+            .font(this.context.getGameFont().deriveFont(30f))
+            .shadow(Color.BLACK, 3)
+            .build();
+    this.rootContainer.addComponent(
+        new UIText(
+            () ->
+                TextConstant.TEXT_SHOP_MONEY
+                    .getText()
+                    .formatted(this.currentState != null ? this.currentState.getMoney() : 0),
+            moneyStyle),
+        2,
+        70,
+        0.1,
+        0.25);
+
+    var boxStyle =
+        new UIStyle.Builder()
+            .bg(new Color(0, 0, 0, 120))
+            .radius(15)
+            .border(Color.DARK_GRAY, 3f)
+            .build();
+    this.shopItemsContainer = new UIContainer(100, 100, boxStyle);
+    this.rootContainer.addComponent(this.shopItemsContainer, 15, 5, 0.50, 0.90);
+
+    this.inventoryContainer = new UIContainer(100, 100, boxStyle);
+    this.rootContainer.addComponent(this.inventoryContainer, 68, 5, 0.20, 0.65);
+
+    var nextStyle =
+        new UIStyle.Builder()
+            .bg(new Color(40, 150, 40))
+            .text(Color.WHITE)
+            .radius(15)
+            .font(this.context.getGameFont().deriveFont(26f))
+            .build();
+    this.rootContainer.addComponent(
+        new UIButton(
+            TextConstant.TEXT_SHOP_NEXT_LEVEL.getText(),
+            nextStyle,
+            () -> {
+              this.previewModalContainer = null;
+              this.swapModalContainer = null;
+              controller.handleLeaveShop();
+            }),
+        70,
+        75,
+        0.15,
+        0.2);
+
+    var rerollStyle =
+        new UIStyle.Builder()
+            .bg(new Color(150, 80, 40))
+            .text(Color.WHITE)
+            .radius(10)
+            .font(this.context.getGameFont().deriveFont(20f))
+            .build();
+    this.rootContainer.addComponent(
+        new UIButton(
+            TextConstant.TEXT_SHOP_REROLL.getText(), rerollStyle, controller::handleRerollShop),
+        10,
+        80,
+        0.05,
+        0.12);
+  }
+
+  private void rebuildShopUI() {
+    this.shopItemsContainer.clearChildren();
+    var subtitleStyle =
+        new UIStyle.Builder()
+            .text(Color.LIGHT_GRAY)
+            .font(this.context.getGameFont().deriveFont(22f))
+            .build();
+    this.shopItemsContainer.addComponent(
+        new UIText(TextConstant.TEXT_SHOP_ITEMS_FOR_SALE.getText(), subtitleStyle), 5, 2, 0.1, 0.3);
+
+    List<ShopItem> shopItems = this.currentState.getShopItems();
+    var startX = 5;
+    for (var i = 0; i < shopItems.size(); i++) {
+      var si = shopItems.get(i);
+      var idx = i;
+
+      var uiJoker =
+          new UIJoker(si.item(), this.context, () -> this.showPreview(idx), this.CARD_RATIO);
+      this.shopItemsContainer.addComponent(uiJoker, 20, startX, 0.60, 0.15);
+
+      var btnStyle =
+          new UIStyle.Builder()
+              .bg(new Color(50, 50, 180))
+              .text(Color.WHITE)
+              .radius(8)
+              .font(this.context.getGameFont().deriveFont(18f))
+              .build();
+      this.shopItemsContainer.addComponent(
+          new UIButton(
+              TextConstant.TEXT_SHOP_PRICE_TAG.getText().formatted(si.price()),
+              btnStyle,
+              () -> this.showPreview(idx)),
+          85,
+          startX,
+          0.12,
+          0.15);
+
+      startX += 22;
     }
-    private final List<ShopItem> currentShopItems = new ArrayList<>();
-    private final List<ShopItem> sessionPurchases = new ArrayList<>();
-    
-    private JokerType pendingPurchaseJoker = null;
-    private int pendingPurchasePrice = 0;
-    private UIContainer swapModalContainer;
-    private UIContainer previewModalContainer;
-    private final double CARD_RATIO = 71.0 / 95.0;
+  }
 
-    private String errorMessage = null;
-    private long errorMessageTime = 0;
+  private void showPreview(int index) {
+    List<ShopItem> shopItems = this.currentState.getShopItems();
+    if (index < 0 || index >= shopItems.size()) return;
+    var si = shopItems.get(index);
 
-    public ShopPage(ViewMain context, GameController controller) {
-        this.context = Objects.requireNonNull(context);
-        this.controller = Objects.requireNonNull(controller);
-        this.buildLayout();
-    }
-
-    private void buildLayout() {
-        var rootStyle = new UIStyle.Builder().bg(new Color(25, 35, 45)).build();
-        this.rootContainer = new UIContainer(100, 100, rootStyle);
-
-        var titleStyle = new UIStyle.Builder().text(Color.ORANGE).font(this.context.getGameFont().deriveFont(36f)).shadow(Color.BLACK, 3).build();
-        this.rootContainer.addComponent(new UIText("LA BOUTIQUE", titleStyle), 2, 5, 0.1, 0.4);
-
-        var moneyStyle = new UIStyle.Builder().text(Color.YELLOW).font(this.context.getGameFont().deriveFont(30f)).shadow(Color.BLACK, 3).build();
-        this.rootContainer.addComponent(new UIText(() -> "Monnaie : " + (this.currentState != null ? this.currentState.getMoney() : 0) + " $", moneyStyle), 2, 70, 0.1, 0.25);
-
-        var boxStyle = new UIStyle.Builder().bg(new Color(0, 0, 0, 120)).radius(15).border(Color.DARK_GRAY, 3f).build();
-        this.shopItemsContainer = new UIContainer(100, 100, boxStyle);
-        this.rootContainer.addComponent(this.shopItemsContainer, 15, 5, 0.50, 0.90);
-
-        this.inventoryContainer = new UIContainer(100, 100, boxStyle);
-        this.rootContainer.addComponent(this.inventoryContainer, 68, 5, 0.20, 0.65);
-
-        var nextStyle = new UIStyle.Builder().bg(new Color(40, 150, 40)).hoverBg(new Color(60, 180, 60)).text(Color.WHITE).radius(15).font(this.context.getGameFont().deriveFont(26f)).build();
-        this.rootContainer.addComponent(new UIButton("Prochain Niveau", nextStyle, () -> {
-            this.currentShopItems.clear();
-            this.sessionPurchases.clear();
-            this.context.navigateTo("game");
-        }), 70, 75, 0.15, 0.2);
-
-        var rerollStyle = new UIStyle.Builder().bg(new Color(150, 80, 40)).hoverBg(new Color(180, 100, 60)).text(Color.WHITE).radius(10).font(this.context.getGameFont().deriveFont(20f)).build();
-        this.rootContainer.addComponent(new UIButton("Reroll (5 $)", rerollStyle, () -> {
-            if (this.currentState != null && this.currentState.getMoney() >= 5) {
-                this.currentState.spendMoney(5);
-                this.rollShopItems();
-                this.rebuildShopUI();
-            } else {
-                this.showError("Pas assez d'argent pour rafraîchir !");
-            }
-        }), 10, 80, 0.05, 0.12);
-    }
-
-    private void rollShopItems() {
-        this.currentShopItems.clear();
-        Random random = new Random();
-        
-        List<JokerType> availableJokers = new ArrayList<>(List.of(JokerType.values()));
-        if (this.currentState != null) {
-            availableJokers.removeAll(this.currentState.getActiveJokers());
-        }
-        
-        for (int i = 0; i < 4 && !availableJokers.isEmpty(); i++) {
-            JokerType j = availableJokers.remove(random.nextInt(availableJokers.size()));
-            int price = 5 + random.nextInt(6);
-            this.currentShopItems.add(new ShopItem(j, price));
-        }
-    }
-
-    private void rebuildShopUI() {
-        this.shopItemsContainer.clearChildren();
-        var subtitleStyle = new UIStyle.Builder().text(Color.LIGHT_GRAY).font(this.context.getGameFont().deriveFont(22f)).build();
-        this.shopItemsContainer.addComponent(new UIText("Articles en vente :", subtitleStyle), 5, 2, 0.1, 0.3);
-
-        int startX = 5;
-        for (int i=0; i<this.currentShopItems.size(); i++) {
-            ShopItem si = this.currentShopItems.get(i);
-            int idx = i;
-            
-            if (si.item() instanceof JokerType joker) {
-                var uiJoker = new UIJoker(joker, this.context, () -> this.showPreview(idx), this.CARD_RATIO);
-                this.shopItemsContainer.addComponent(uiJoker, 20, startX, 0.60, 0.15);
-                
-                var btnStyle = new UIStyle.Builder().bg(new Color(50, 50, 180)).hoverBg(new Color(70, 70, 220)).text(Color.WHITE).radius(8).font(this.context.getGameFont().deriveFont(18f)).build();
-                this.shopItemsContainer.addComponent(new UIButton(si.price() + " $", btnStyle, () -> this.showPreview(idx)), 85, startX, 0.12, 0.15);
-            }
-            startX += 22;
-        }
-    }
-
-    private void showPreview(int index) {
-        if (index < 0 || index >= this.currentShopItems.size()) return;
-        ShopItem si = this.currentShopItems.get(index);
-        
-        if (this.currentState.getMoney() < si.price()) {
-            this.showError("Vous n'avez pas assez d'argent !");
-            return;
-        }
-
-        if (si.item() instanceof JokerType joker) {
-            UIStyle modalStyle = new UIStyle.Builder().bg(new Color(20, 20, 30, 245)).radius(15).border(Color.CYAN, 3f).padding(15).build();
-            this.previewModalContainer = new UIContainer(100, 100, modalStyle);
-
-            UIStyle nameStyle = new UIStyle.Builder().text(Color.CYAN).font(context.getGameFont().deriveFont(32f)).build();
-            this.previewModalContainer.addComponent(new UIText(joker.getJokerName(), nameStyle), 8, 5, 0.15, 0.90);
-
-            var uiJoker = new UIJoker(joker, this.context, null, this.CARD_RATIO);
-            this.previewModalContainer.addComponent(uiJoker, 25, 10, 0.50, 0.25);
-
-            UIStyle descStyle = new UIStyle.Builder().text(Color.WHITE).font(context.getGameFont().deriveFont(18f)).build();
-            this.previewModalContainer.addComponent(new UIText("Effet : " + joker.getDescription(), descStyle), 30, 40, 0.4, 0.55);
-            
-            UIStyle priceStyle = new UIStyle.Builder().text(Color.YELLOW).font(context.getGameFont().deriveFont(26f)).build();
-            this.previewModalContainer.addComponent(new UIText("Prix : " + si.price() + " $", priceStyle), 65, 40, 0.1, 0.4);
-
-            UIStyle buyStyle = new UIStyle.Builder().bg(new Color(40, 150, 40)).hoverBg(new Color(60, 180, 60)).text(Color.WHITE).radius(10).font(context.getGameFont().deriveFont(24f)).build();
-            this.previewModalContainer.addComponent(new UIButton("Acheter", buyStyle, () -> {
-                this.previewModalContainer = null;
-                this.executePurchase(si, index);
-            }), 80, 20, 0.12, 0.25);
-
-            UIStyle cancelStyle = new UIStyle.Builder().bg(Color.RED).hoverBg(new Color(200, 50, 50)).text(Color.WHITE).radius(10).font(context.getGameFont().deriveFont(24f)).build();
-            this.previewModalContainer.addComponent(new UIButton("Reposer", cancelStyle, () -> {
-                this.previewModalContainer = null;
-            }), 80, 55, 0.12, 0.25);
-        }
-    }
-
-    private void executePurchase(ShopItem si, int shopIndex) {
-        if (si.item() instanceof JokerType joker) {
-            if (this.currentState.isJokersFull()) {
-                this.triggerJokerSwap(joker, si.price(), shopIndex);
-            } else {
-                this.currentState.spendMoney(si.price());
-                this.currentState.addJoker(joker);
-                this.currentShopItems.remove(shopIndex);
-                this.sessionPurchases.add(si);
-                this.rebuildShopUI();
-                this.rebuildInventoryUI();
-            }
-        }
+    if (this.currentState.getMoney() < si.price()) {
+      this.showError(TextConstant.TEXT_SHOP_ERROR_NO_MONEY_BUY.getText());
+      return;
     }
 
-    private void showRefundPreview(ShopItem si) {
-        if (si.item() instanceof JokerType joker) {
-            UIStyle modalStyle = new UIStyle.Builder().bg(new Color(20, 20, 20, 245)).radius(15).border(Color.ORANGE, 3f).padding(15).build();
-            this.previewModalContainer = new UIContainer(100, 100, modalStyle);
+    var joker = si.item();
+    var modalStyle =
+        new UIStyle.Builder()
+            .bg(new Color(20, 20, 30, 245))
+            .radius(15)
+            .border(Color.CYAN, 3f)
+            .padding(15)
+            .build();
+    this.previewModalContainer = new UIContainer(100, 100, modalStyle);
 
-            UIStyle nameStyle = new UIStyle.Builder().text(Color.ORANGE).font(context.getGameFont().deriveFont(32f)).build();
-            this.previewModalContainer.addComponent(new UIText("Reposer " + joker.getJokerName() + " ?", nameStyle), 10, 5, 0.1, 0.90);
+    var nameStyle =
+        new UIStyle.Builder().text(Color.CYAN).font(context.getGameFont().deriveFont(32f)).build();
+    this.previewModalContainer.addComponent(
+        new UIText(joker.getJokerName(), nameStyle), 8, 5, 0.15, 0.90);
 
-            var uiJoker = new UIJoker(joker, this.context, null, this.CARD_RATIO);
-            this.previewModalContainer.addComponent(uiJoker, 30, 42, 0.40, 0.16);
+    var uiJoker = new UIJoker(joker, this.context, null, this.CARD_RATIO);
+    this.previewModalContainer.addComponent(uiJoker, 25, 10, 0.50, 0.25);
 
-            UIStyle descStyle = new UIStyle.Builder().text(Color.WHITE).font(context.getGameFont().deriveFont(22f)).build();
-            this.previewModalContainer.addComponent(new UIText("Remboursement : +" + si.price() + " $", descStyle), 75, 30, 0.1, 0.4);
+    var descStyle =
+        new UIStyle.Builder().text(Color.WHITE).font(context.getGameFont().deriveFont(18f)).build();
+    this.previewModalContainer.addComponent(
+        new UIText(
+            TextConstant.TEXT_SHOP_EFFECT.getText().formatted(joker.getDescription()), descStyle),
+        30,
+        40,
+        0.4,
+        0.55);
 
-            UIStyle buyStyle = new UIStyle.Builder().bg(new Color(150, 40, 40)).hoverBg(new Color(180, 60, 60)).text(Color.WHITE).radius(10).font(context.getGameFont().deriveFont(20f)).build();
-            this.previewModalContainer.addComponent(new UIButton("Reposer (Rembourser)", buyStyle, () -> {
-                this.previewModalContainer = null;
-                this.currentState.addMoney(si.price());
-                this.currentState.removeJoker(joker);
+    var priceStyle =
+        new UIStyle.Builder()
+            .text(Color.YELLOW)
+            .font(context.getGameFont().deriveFont(26f))
+            .build();
+    this.previewModalContainer.addComponent(
+        new UIText(TextConstant.TEXT_SHOP_PRICE_LABEL.getText().formatted(si.price()), priceStyle),
+        65,
+        40,
+        0.1,
+        0.4);
 
-                if (si.replacedJoker() != null) {
-                    this.currentState.addJoker(si.replacedJoker());
-                }
+    var buyStyle =
+        new UIStyle.Builder()
+            .bg(new Color(40, 150, 40))
+            .text(Color.WHITE)
+            .radius(10)
+            .font(context.getGameFont().deriveFont(24f))
+            .build();
+    this.previewModalContainer.addComponent(
+        new UIButton(
+            TextConstant.TEXT_SHOP_BUY.getText(),
+            buyStyle,
+            () -> {
+              this.previewModalContainer = null;
+              if (this.currentState.isJokersFull()) {
+                this.triggerJokerSwap(index);
+              } else {
+                controller.handleBuyShopItem(index);
+              }
+            }),
+        80,
+        20,
+        0.12,
+        0.25);
 
-                this.sessionPurchases.remove(si);
+    var cancelStyle =
+        new UIStyle.Builder()
+            .bg(Color.RED)
+            .text(Color.WHITE)
+            .radius(10)
+            .font(context.getGameFont().deriveFont(24f))
+            .build();
+    this.previewModalContainer.addComponent(
+        new UIButton(
+            TextConstant.TEXT_SHOP_CANCEL_PREVIEW.getText(),
+            cancelStyle,
+            () -> this.previewModalContainer = null),
+        80,
+        55,
+        0.12,
+        0.25);
+  }
 
-                this.currentShopItems.add(new ShopItem(si.item(), si.price()));
-                this.rebuildShopUI();
-                this.rebuildInventoryUI();
-            }), 85, 20, 0.15, 0.30);
+  private void showRefundPreview(ShopItem si) {
+    var joker = si.item();
 
-            UIStyle cancelStyle = new UIStyle.Builder().bg(Color.DARK_GRAY).hoverBg(Color.GRAY).text(Color.WHITE).radius(10).font(context.getGameFont().deriveFont(20f)).build();
-            this.previewModalContainer.addComponent(new UIButton("Garder", cancelStyle, () -> {
-                this.previewModalContainer = null;
-            }), 85, 55, 0.10, 0.25);
-        }
-    }
+    var modalStyle =
+        new UIStyle.Builder()
+            .bg(new Color(20, 20, 20, 245))
+            .radius(15)
+            .border(Color.ORANGE, 3f)
+            .padding(15)
+            .build();
+    this.previewModalContainer = new UIContainer(100, 100, modalStyle);
 
-    private void triggerJokerSwap(JokerType newJoker, int price, int shopIndex) {
-        this.pendingPurchaseJoker = newJoker;
-        this.pendingPurchasePrice = price;
+    var nameStyle =
+        new UIStyle.Builder()
+            .text(Color.ORANGE)
+            .font(context.getGameFont().deriveFont(32f))
+            .build();
+    this.previewModalContainer.addComponent(
+        new UIText(
+            TextConstant.TEXT_SHOP_REFUND_QUESTION.getText().formatted(joker.getJokerName()),
+            nameStyle),
+        10,
+        5,
+        0.1,
+        0.90);
 
-        UIStyle modalStyle = new UIStyle.Builder().bg(new Color(20, 20, 20, 245)).radius(15).border(Color.ORANGE, 3f).padding(15).build();
-        this.swapModalContainer = new UIContainer(100, 100, modalStyle);
+    var uiJoker = new UIJoker(joker, this.context, null, this.CARD_RATIO);
+    this.previewModalContainer.addComponent(uiJoker, 30, 42, 0.40, 0.16);
 
-        UIStyle headerStyle = new UIStyle.Builder().text(Color.RED).font(context.getGameFont().deriveFont(24f)).build();
-        this.swapModalContainer.addComponent(new UIText("INVENTAIRE PLEIN ! Cliquez sur un Joker à remplacer.", headerStyle), 5, 2, 0.1, 0.90);
+    var descStyle =
+        new UIStyle.Builder().text(Color.WHITE).font(context.getGameFont().deriveFont(22f)).build();
+    this.previewModalContainer.addComponent(
+        new UIText(TextConstant.TEXT_SHOP_REFUND_LABEL.getText().formatted(si.price()), descStyle),
+        75,
+        30,
+        0.1,
+        0.4);
 
-        var actives = this.currentState.getActiveJokers();
-        int itemX = 5;
-        for (var oldJoker : actives) {
-            var actJokerComp = new UIJoker(oldJoker, this.context, () -> {
-                this.currentState.spendMoney(this.pendingPurchasePrice);
-                this.currentState.removeJoker(oldJoker);
-                this.currentState.addJoker(this.pendingPurchaseJoker);
-                this.sessionPurchases.add(new ShopItem(this.pendingPurchaseJoker, this.pendingPurchasePrice, oldJoker));
-                this.currentShopItems.remove(shopIndex);
-                this.pendingPurchaseJoker = null;
+    var buyStyle =
+        new UIStyle.Builder()
+            .bg(new Color(150, 40, 40))
+            .text(Color.WHITE)
+            .radius(10)
+            .font(context.getGameFont().deriveFont(20f))
+            .build();
+    this.previewModalContainer.addComponent(
+        new UIButton(
+            TextConstant.TEXT_SHOP_REFUND_CONFIRM.getText(),
+            buyStyle,
+            () -> {
+              this.previewModalContainer = null;
+              controller.handleRefundShopItem(si);
+            }),
+        85,
+        20,
+        0.15,
+        0.30);
+
+    var cancelStyle =
+        new UIStyle.Builder()
+            .bg(Color.DARK_GRAY)
+            .text(Color.WHITE)
+            .radius(10)
+            .font(context.getGameFont().deriveFont(20f))
+            .build();
+    this.previewModalContainer.addComponent(
+        new UIButton(
+            TextConstant.TEXT_SHOP_REFUND_KEEP.getText(),
+            cancelStyle,
+            () -> this.previewModalContainer = null),
+        85,
+        55,
+        0.10,
+        0.25);
+  }
+
+  private void triggerJokerSwap(int shopIndex) {
+
+    var modalStyle =
+        new UIStyle.Builder()
+            .bg(new Color(20, 20, 20, 245))
+            .radius(15)
+            .border(Color.ORANGE, 3f)
+            .padding(15)
+            .build();
+    this.swapModalContainer = new UIContainer(100, 100, modalStyle);
+
+    var headerStyle =
+        new UIStyle.Builder().text(Color.RED).font(context.getGameFont().deriveFont(24f)).build();
+    this.swapModalContainer.addComponent(
+        new UIText(TextConstant.TEXT_SHOP_ERROR_INVENTORY_FULL.getText(), headerStyle),
+        5,
+        2,
+        0.1,
+        0.90);
+
+    var actives = this.currentState.getActiveJokers();
+    var itemX = 5;
+    for (var oldJoker : actives) {
+      var actJokerComp =
+          new UIJoker(
+              oldJoker,
+              this.context,
+              () -> {
+                controller.handleSwapJokerAndBuy(oldJoker, shopIndex);
                 this.swapModalContainer = null;
-                this.rebuildShopUI();
-                this.rebuildInventoryUI();
-            }, this.CARD_RATIO);
-            this.swapModalContainer.addComponent(actJokerComp, 25, itemX, 0.45, 0.16);
-            itemX += 19;
-        }
-
-        UIStyle cancelStyle = new UIStyle.Builder().bg(Color.RED).hoverBg(new Color(200, 50, 50)).text(Color.WHITE).radius(10).font(context.getGameFont().deriveFont(20f)).build();
-        this.swapModalContainer.addComponent(new UIButton("ANNULER", cancelStyle, () -> {
-            this.pendingPurchaseJoker = null;
-            this.swapModalContainer = null;
-        }), 80, 40, 0.12, 0.20);
+              },
+              this.CARD_RATIO);
+      this.swapModalContainer.addComponent(actJokerComp, 25, itemX, 0.45, 0.16);
+      itemX += 19;
     }
 
-    private void rebuildInventoryUI() {
-        this.inventoryContainer.clearChildren();
-        var subtitleStyle = new UIStyle.Builder().text(Color.LIGHT_GRAY).font(this.context.getGameFont().deriveFont(18f)).build();
-        this.inventoryContainer.addComponent(new UIText("Vos Jokers :", subtitleStyle), 5, 2, 0.15, 0.3);
+    var cancelStyle =
+        new UIStyle.Builder()
+            .bg(Color.RED)
+            .text(Color.WHITE)
+            .radius(10)
+            .font(context.getGameFont().deriveFont(20f))
+            .build();
+    this.swapModalContainer.addComponent(
+        new UIButton(
+            TextConstant.TEXT_SHOP_CANCEL_SWAP.getText(),
+            cancelStyle,
+            () -> {
+              this.swapModalContainer = null;
+            }),
+        80,
+        40,
+        0.12,
+        0.20);
+  }
 
-        if (this.currentState != null) {
-            var actives = this.currentState.getActiveJokers();
-            int jokerX = 5;
-            for (var joker : actives) {
-                ShopItem refundable = this.sessionPurchases.stream()
-                        .filter(si -> si.item().equals(joker)).findFirst().orElse(null);
+  private void rebuildInventoryUI() {
+    this.inventoryContainer.clearChildren();
+    var subtitleStyle =
+        new UIStyle.Builder()
+            .text(Color.LIGHT_GRAY)
+            .font(this.context.getGameFont().deriveFont(18f))
+            .build();
+    this.inventoryContainer.addComponent(
+        new UIText(TextConstant.TEXT_SHOP_YOUR_JOKERS.getText(), subtitleStyle), 5, 2, 0.15, 0.3);
 
-                var uiJoker = new UIJoker(joker, this.context, () -> {
-                    if (refundable != null) {
-                        this.showRefundPreview(refundable);
-                    }
-                }, this.CARD_RATIO);
-                this.inventoryContainer.addComponent(uiJoker, 25, jokerX, 0.70, 0.16);
-                jokerX += 18;
-            }
-        }
+    if (this.currentState != null) {
+      var actives = this.currentState.getActiveJokers();
+      List<ShopItem> sessionPurchases = this.currentState.getSessionPurchases();
+      var jokerX = 5;
+      for (var joker : actives) {
+        var refundable =
+            sessionPurchases.stream()
+                .filter(si -> si.item().equals(joker))
+                .findFirst()
+                .orElse(null);
+
+        var uiJoker =
+            new UIJoker(
+                joker,
+                this.context,
+                () -> {
+                  if (refundable != null) {
+                    this.showRefundPreview(refundable);
+                  }
+                },
+                this.CARD_RATIO);
+        this.inventoryContainer.addComponent(uiJoker, 25, jokerX, 0.70, 0.16);
+        jokerX += 18;
+      }
+    }
+  }
+
+  @Override
+  public void update(GameSnapshot gameSnapshot) {
+    this.currentState = gameSnapshot.state();
+    this.rebuildShopUI();
+    this.rebuildInventoryUI();
+  }
+
+  private void showError(String message) {
+    this.errorMessage = message;
+    this.errorMessageTime = System.currentTimeMillis();
+  }
+
+  @Override
+  public void showOverlay(String message, Color color, Runnable onClose) {
+    this.showError(message);
+  }
+
+  @Override
+  public void render(Graphics2D g, float sw, float sh) {
+    this.rootContainer.render(g, 0, 0, (int) sw, (int) sh);
+
+    if (this.previewModalContainer != null) {
+      g.setColor(new Color(0, 0, 0, 200));
+      g.fillRect(0, 0, (int) sw, (int) sh);
+      var mw = (int) (sw * 0.80);
+      var mh = (int) (sh * 0.65);
+      var mx = (int) (sw - mw) / 2;
+      var my = (int) (sh - mh) / 2;
+      this.previewModalContainer.render(g, mx, my, mw, mh);
+    } else if (this.swapModalContainer != null) {
+      g.setColor(new Color(0, 0, 0, 200));
+      g.fillRect(0, 0, (int) sw, (int) sh);
+      var mw = (int) (sw * 0.85);
+      var mh = (int) (sh * 0.75);
+      var mx = (int) (sw - mw) / 2;
+      var my = (int) (sh - mh) / 2;
+      this.swapModalContainer.render(g, mx, my, mw, mh);
     }
 
-    @Override
-    public void update(GameSnapshot gameSnapshot) {
-        this.currentState = gameSnapshot.state();
-        
-        if (this.currentShopItems.isEmpty()) {
-            this.rollShopItems();
-            this.rebuildShopUI();
-        }
+    if (this.errorMessage != null) {
+      var elapsed = System.currentTimeMillis() - this.errorMessageTime;
+      if (elapsed > 2000) {
+        this.errorMessage = null;
+      } else {
+        g.setFont(this.context.getGameFont().deriveFont(28f));
+        var metrics = g.getFontMetrics();
+        var textW = metrics.stringWidth(this.errorMessage);
+        var msgX = (int) (sw - textW) / 2;
+        var msgY = (int) (sh * 0.15);
 
-        this.rebuildInventoryUI();
+        var padding = 15;
+        g.setColor(new Color(180, 20, 20, 220));
+        g.fillRoundRect(
+            msgX - padding,
+            msgY - metrics.getAscent() - padding,
+            textW + padding * 2,
+            metrics.getHeight() + padding * 2,
+            10,
+            10);
+        g.setColor(Color.WHITE);
+        g.drawRoundRect(
+            msgX - padding,
+            msgY - metrics.getAscent() - padding,
+            textW + padding * 2,
+            metrics.getHeight() + padding * 2,
+            10,
+            10);
+
+        g.setColor(Color.WHITE);
+        g.drawString(this.errorMessage, msgX, msgY);
+      }
     }
+  }
 
-    private void showError(String message) {
-        this.errorMessage = message;
-        this.errorMessageTime = System.currentTimeMillis();
+  @Override
+  public void handlePointerClick(int mx, int my, float sw, float sh) {
+    if (this.previewModalContainer != null) {
+      var mw = (int) (sw * 0.80);
+      var mh = (int) (sh * 0.65);
+      var rx = (int) (sw - mw) / 2;
+      var ry = (int) (sh - mh) / 2;
+      this.previewModalContainer.handlePointerClick(mx, my, rx, ry, mw, mh);
+      return;
     }
-
-    @Override
-    public void showOverlay(String m, Color c, Runnable o) {}
-
-    @Override
-    public void render(Graphics2D g, float sw, float sh) {
-        this.rootContainer.render(g, 0, 0, (int) sw, (int) sh);
-
-        if (this.previewModalContainer != null) {
-            g.setColor(new Color(0, 0, 0, 200));
-            g.fillRect(0, 0, (int) sw, (int) sh);
-            int mw = (int)(sw * 0.80); int mh = (int)(sh * 0.65);
-            int mx = (int)(sw - mw) / 2; int my = (int)(sh - mh) / 2;
-            this.previewModalContainer.render(g, mx, my, mw, mh);
-        } else if (this.swapModalContainer != null) {
-            g.setColor(new Color(0, 0, 0, 200));
-            g.fillRect(0, 0, (int) sw, (int) sh);
-            int mw = (int)(sw * 0.85); int mh = (int)(sh * 0.75);
-            int mx = (int)(sw - mw) / 2; int my = (int)(sh - mh) / 2;
-            this.swapModalContainer.render(g, mx, my, mw, mh);
-        }
-
-        if (this.errorMessage != null) {
-            long elapsed = System.currentTimeMillis() - this.errorMessageTime;
-            if (elapsed > 2000) {
-                this.errorMessage = null;
-            } else {
-                g.setFont(this.context.getGameFont().deriveFont(28f));
-                var metrics = g.getFontMetrics();
-                int textW = metrics.stringWidth(this.errorMessage);
-                int msgX = (int) (sw - textW) / 2;
-                int msgY = (int) (sh * 0.15); // near the top
-
-                int padding = 15;
-                g.setColor(new Color(180, 20, 20, 220));
-                g.fillRoundRect(msgX - padding, msgY - metrics.getAscent() - padding, textW + padding * 2, metrics.getHeight() + padding * 2, 10, 10);
-                g.setColor(Color.WHITE);
-                g.drawRoundRect(msgX - padding, msgY - metrics.getAscent() - padding, textW + padding * 2, metrics.getHeight() + padding * 2, 10, 10);
-                
-                g.setColor(Color.WHITE);
-                g.drawString(this.errorMessage, msgX, msgY);
-            }
-        }
+    if (this.swapModalContainer != null) {
+      var mw = (int) (sw * 0.85);
+      var mh = (int) (sh * 0.75);
+      var rx = (int) (sw - mw) / 2;
+      var ry = (int) (sh - mh) / 2;
+      this.swapModalContainer.handlePointerClick(mx, my, rx, ry, mw, mh);
+      return;
     }
-
-    @Override
-    public void handlePointerClick(int mx, int my, float sw, float sh) {
-        if (this.previewModalContainer != null) {
-            int mw = (int)(sw * 0.80); int mh = (int)(sh * 0.65);
-            int rx = (int)(sw - mw) / 2; int ry = (int)(sh - mh) / 2;
-            this.previewModalContainer.handlePointerClick(mx, my, rx, ry, mw, mh);
-            return;
-        }
-        if (this.swapModalContainer != null) {
-            int mw = (int)(sw * 0.85); int mh = (int)(sh * 0.75);
-            int rx = (int)(sw - mw) / 2; int ry = (int)(sh - mh) / 2;
-            this.swapModalContainer.handlePointerClick(mx, my, rx, ry, mw, mh);
-            return;
-        }
-        this.rootContainer.handlePointerClick(mx, my, 0, 0, (int) sw, (int) sh);
-    }
-
-    @Override
-    public void handlePointerMove(int mx, int my, float sw, float sh) {
-        if (this.previewModalContainer != null) {
-            int mw = (int)(sw * 0.80); int mh = (int)(sh * 0.65);
-            int rx = (int)(sw - mw) / 2; int ry = (int)(sh - mh) / 2;
-            this.previewModalContainer.handlePointerMove(mx, my, rx, ry, mw, mh);
-            return;
-        }
-        if (this.swapModalContainer != null) {
-            int mw = (int)(sw * 0.85); int mh = (int)(sh * 0.75);
-            int rx = (int)(sw - mw) / 2; int ry = (int)(sh - mh) / 2;
-            this.swapModalContainer.handlePointerMove(mx, my, rx, ry, mw, mh);
-            return;
-        }
-        this.rootContainer.handlePointerMove(mx, my, 0, 0, (int) sw, (int) sh);
-    }
+    this.rootContainer.handlePointerClick(mx, my, 0, 0, (int) sw, (int) sh);
+  }
 }

@@ -18,7 +18,7 @@ public enum Rank {
   private final String label;
   private final int value;
 
-  private Rank(String label, int value) {
+  Rank(String label, int value) {
     this.label = label;
     this.value = value;
   }

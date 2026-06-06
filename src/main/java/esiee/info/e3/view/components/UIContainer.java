@@ -1,6 +1,5 @@
 package esiee.info.e3.view.components;
 
-import esiee.info.e3.view.interfaces.UIComponent;
 import esiee.info.e3.view.utils.Bounds;
 import esiee.info.e3.view.utils.GridChild;
 import esiee.info.e3.view.utils.UIStyle;
@@ -9,13 +8,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class UIContainer implements UIComponent {
+public final class UIContainer implements UIComponent {
 
   private final List<GridChild> children = new ArrayList<>();
   private final UIStyle style;
   private final int rows;
   private final int cols;
-  private boolean isHovered = false;
 
   public UIContainer(int rows, int cols, UIStyle style) {
     this.rows = rows;
@@ -31,10 +29,7 @@ public class UIContainer implements UIComponent {
   public void render(Graphics2D g, int x, int y, int width, int height) {
     var drawArea = this.calculateDrawArea(x, y, width, height);
 
-    var bgColor =
-        (this.isHovered && this.style.hoverBackgroundColor() != null)
-            ? this.style.hoverBackgroundColor()
-            : this.style.backgroundColor();
+    var bgColor = this.style.backgroundColor();
 
     g.setColor(bgColor);
     g.fillRoundRect(
@@ -77,23 +72,6 @@ public class UIContainer implements UIComponent {
       }
     }
     return false;
-  }
-
-  @Override
-  public void handlePointerMove(int mx, int my, int x, int y, int width, int height) {
-    var drawArea = this.calculateDrawArea(x, y, width, height);
-    this.isHovered =
-        (mx >= drawArea.x()
-            && mx <= drawArea.x() + drawArea.w()
-            && my >= drawArea.y()
-            && my <= drawArea.y() + drawArea.h());
-
-    var innerArea = this.calculateInnerArea(drawArea);
-
-    for (var child : this.children) {
-      var cb = this.calculateChildBounds(child, innerArea);
-      child.component().handlePointerMove(mx, my, cb.x(), cb.y(), cb.w(), cb.h());
-    }
   }
 
   public void clearChildren() {

@@ -1,172 +1,232 @@
 package esiee.info.e3.controller;
 
+import esiee.info.e3.config.enums.OverlayType;
+import esiee.info.e3.config.enums.RoutesEnum;
 import esiee.info.e3.config.enums.TextConstant;
 import esiee.info.e3.domain.Card;
+import esiee.info.e3.domain.ShopItem;
 import esiee.info.e3.domain.enums.JokerType;
-import esiee.info.e3.manager.SaveManager;
-import esiee.info.e3.model.GameModel;
-import esiee.info.e3.model.GameState;
-import esiee.info.e3.view.interfaces.IView;
+import esiee.info.e3.manager.ISaveManager;
+import esiee.info.e3.model.gameModel.IGameModel;
+import esiee.info.e3.model.gameState.GameSateEnum;
+import esiee.info.e3.model.gameState.IGameState;
+import esiee.info.e3.model.playState.*;
+import esiee.info.e3.model.shopState.ShopErrorInventoryFull;
+import esiee.info.e3.model.shopState.ShopErrorNoMoneyBuy;
+import esiee.info.e3.model.shopState.ShopErrorNoMoneyReroll;
+import esiee.info.e3.view.main.IView;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.Objects;
 
-public class GameController {
-    private final GameModel model;
-    private final IView view;
+public record GameController(IGameModel model, IView view, ISaveManager saveManager)
+    implements IGameController {
 
-    public GameController(GameModel model, IView view) {
-        this.model = Objects.requireNonNull(model);
-        this.view = Objects.requireNonNull(view);
+  public GameController {
+    Objects.requireNonNull(model);
+    Objects.requireNonNull(view);
+    Objects.requireNonNull(saveManager);
+  }
+
+  @Override
+  public void startGame(boolean infiniteMode) {
+    model.executeStartGameAction(infiniteMode);
+    view().navigateTo(RoutesEnum.GAME, true);
+  }
+
+  @Override
+  public void goTo(RoutesEnum route, boolean withLoading) {
+    view.navigateTo(route, withLoading);
+  }
+
+  @Override
+  public void handleRerollShop() {
+    var result = model.executeRerollShopAction();
+
+    switch (result) {
+      case ShopErrorNoMoneyReroll _ ->
+          view.showOverlay(
+              OverlayType.ERROR, TextConstant.TEXT_SHOP_ERROR_NO_MONEY_REROLL.getText(), null);
+      default -> {}
+    }
+  }
+
+  @Override
+  public void handleBuyShopItem(int index) {
+    var result = model.executeBuyShopItemAction(index);
+
+    switch (result) {
+      case ShopErrorNoMoneyBuy _ ->
+          view.showOverlay(
+              OverlayType.ERROR, TextConstant.TEXT_SHOP_ERROR_NO_MONEY_BUY.getText(), null);
+      case ShopErrorInventoryFull _ ->
+          view.showOverlay(
+              OverlayType.ERROR, TextConstant.TEXT_SHOP_ERROR_INVENTORY_FULL.getText(), null);
+      default -> {}
+    }
+  }
+
+  @Override
+  public void handleSwapJokerAndBuy(JokerType oldJoker, int shopIndex) {
+    model.executeSwapJokerAndBuyAction(oldJoker, shopIndex);
+  }
+
+  @Override
+  public void handleRefundShopItem(ShopItem si) {
+    model.executeRefundShopItemAction(si);
+  }
+
+  @Override
+  public void handleLeaveShop() {
+    model.executeLeaveShopAction();
+    view.navigateTo(RoutesEnum.GAME, false);
+  }
+
+  @Override
+  public void init() {
+    model.notifyObservers();
+    view.start();
+  }
+
+  @Override
+  public void resetGame() {
+    this.model.resetGame();
+    view.navigateTo(RoutesEnum.HOME, false);
+  }
+
+  @Override
+  public void loadGameFromJson(String saveId) {
+    Objects.requireNonNull(saveId);
+    model.resetSelectedCards();
+
+    switch (model) {
+      case esiee.info.e3.model.gameModel.GameModel concreteModel ->
+          saveManager.loadGame(saveId, concreteModel);
+      default -> {}
     }
 
-    public void startGame(boolean infiniteMode) {
-        this.model.resetSelectedCards();
-        this.model.resetGame();
-        this.model.getState().setInfiniteMode(infiniteMode);
-        this.model.notifyObservers();
+    model.notifyObservers();
+    view.navigateTo(RoutesEnum.GAME, true);
+  }
+
+  @Override
+  public void toggleCardSelection(Card card) {
+    Objects.requireNonNull(card);
+    var isOK = model.toggleCardSelection(card);
+    if (!isOK) {
+      view.showOverlay(
+          OverlayType.ERROR, TextConstant.TEXT_CONSTANT_ERROR_MAX_CARDS.getText(), null);
     }
+  }
 
-    public void init() {
-        this.model.notifyObservers();
-        this.view.start();
+  @Override
+  public void handlePlay() {
+    var result = model.executePlayAction();
+
+    switch (result) {
+      case PlayStateError err -> view.showOverlay(OverlayType.ERROR, err.message(), null);
+      case PlayStateHandPlayed hp -> {
+        executeConditionalSave(GameSateEnum.PROGRESS);
+        var message =
+            TextConstant.TEXT_CONSTANT_SCORE.getText()
+                + TextConstant.TEXT_CONSTANT_HAND_PLAYED.getText()
+                + hp.scoreGained()
+                + TextConstant.TEXT_CONSTANT_POINTS.getText();
+        view.showOverlay(OverlayType.INFO, message, null);
+      }
+      case PlayStateBlindBeaten bb -> {
+        executeConditionalSave(GameSateEnum.PROGRESS);
+        view.showOverlay(OverlayType.INFO, bb.message(), null);
+      }
+      case PlayStateGameWon _ -> {
+        executeConditionalSave(GameSateEnum.VICTORY);
+        view.showOverlay(
+            OverlayType.VICTORY,
+            TextConstant.TEXT_CONSTANT_VICTORY.getText() + model.getState().getCurrentScore(),
+            this::resetGame);
+      }
+      case PlayStateGameLost _ -> {
+        saveHighScoreIfBetter(model.getState());
+        executeConditionalSave(GameSateEnum.DEFEAT);
+        view.showOverlay(
+            OverlayType.DEFEAT,
+            TextConstant.TEXT_CONSTANT_DEFEAT.getText() + model.getState().getCurrentScore(),
+            this::resetGame);
+      }
+      case PlayStateFailure f -> f.exception().printStackTrace();
     }
+  }
 
-    public void resetGame() {
-        this.model.resetGame();
-        this.model.notifyObservers();
+  @Override
+  public void handleDiscard() {
+    if (model.isEmptySelectedCards()) {
+      view.showOverlay(
+          OverlayType.ERROR, TextConstant.TEXT_CONSTANT_ERROR_PLAY_EMPTY.getText(), null);
+      return;
     }
-
-    public void loadGameFromJson(String saveId) {
-        this.model.resetSelectedCards();
-        SaveManager.loadGame(saveId, this.model);
-        this.model.notifyObservers();
+    try {
+      model.executeDiscardAction();
+    } catch (Exception e) {
+      e.printStackTrace();
     }
+  }
 
-    public void toggleCardSelection(Card card) {
-        var isOK = this.model.toggleCardSelection(card);
-        if (!isOK){
-            this.view.showError(TextConstant.TEXT_CONSTANT_ERROR_MAX_CARDS.getText());
-        }
-        this.model.notifyObservers();
+  @Override
+  public String getJokerRarity(JokerType joker) {
+    Objects.requireNonNull(joker);
+    return model.getJokerRarityLabel(joker);
+  }
+
+  @Override
+  public long getExpectedScore() {
+    return model.calculateExpectedScore();
+  }
+
+  @Override
+  public void saveAndQuit() {
+    executeConditionalSave(GameSateEnum.PROGRESS);
+    view.navigateTo(RoutesEnum.HOME, false);
+  }
+
+  @Override
+  public void exitGame() {
+    System.exit(0);
+  }
+
+  @Override
+  public long getHighScore() {
+    try {
+      var f = new File(saveManager.getPathFileSave());
+      if (f.exists()) {
+        return Long.parseLong(Files.readString(f.toPath()).trim());
+      }
+    } catch (Exception e) {
+      System.err.println(e.getMessage());
     }
+    return 0;
+  }
 
-    public void handleRemoveJoker(JokerType joker) {
-        boolean isRemoved = this.model.removeJoker(joker);
-        if (!isRemoved) {
-            this.view.showError("Erreur : Impossible de retirer ce Joker.");
-        }
-        this.model.notifyObservers();
+  private void saveHighScoreIfBetter(IGameState state) {
+    Objects.requireNonNull(state);
+    try {
+      long currentHigh = 0;
+      File f = new File(saveManager.getPathFileSave());
+      if (f.exists()) currentHigh = Long.parseLong(Files.readString(f.toPath()).trim());
+
+      if (state.getCurrentScore() > currentHigh) {
+        Files.writeString(f.toPath(), String.valueOf(state.getCurrentScore()));
+      }
+    } catch (IOException e) {
+      System.err.println(e.getMessage());
     }
+  }
 
-    public void handlePlay() {
-        if (this.model.isEmptySelectedCards()) {
-            view.showError(TextConstant.TEXT_CONSTANT_ERROR_PLAY_EMPTY.getText());
-            return;
-        }
-        if (this.model.getState().getHandsLeft() <= 0) return;
-
-        try {
-            var scoreGained = this.model.playHand(new ArrayList<>(this.model.getSelectedCards()));
-            this.model.resetSelectedCards();
-
-            var state = this.model.getState();
-
-            if (state.getCurrentScore() >= state.getCurrentBlind().score()) {
-                var wonPlanet = this.model.grantRandomPlanetReward();
-                
-                int baseReward = 4;
-                int handsBonus = state.getHandsLeft();
-                int discardsBonus = state.getDiscardsLeft();
-                int totalMoney = baseReward + handsBonus + discardsBonus;
-                state.addMoney(totalMoney);
-
-                if (this.model.nextBlind()) {
-                    var nextBlind = state.getCurrentBlind();
-                    var constraint = state.getCurrentConstraint();
-                    String constraintText = (constraint != null && !constraint.name().equals("NONE")) ? "\nContrainte : " + constraint.getDescription() : "";
-
-                    String details = "Gains du Round :\n"
-                            + "Base : " + baseReward + " $\n"
-                            + "Mains restantes : +" + handsBonus + " $\n"
-                            + "Défausses restantes : +" + discardsBonus + " $\n"
-                            + "Total gagné : " + totalMoney + " $";
-
-                    var msg = "[SHOP_REWARD:" + totalMoney + "|" + nextBlind.id() + "|/planets/" + wonPlanet.getFileName() + "]"
-                            + TextConstant.TEXT_CONSTANT_BLIND_BEATEN.getText() + "\n"
-                            + "Prochain Niveau : " + nextBlind.name() + "\n"
-                            + constraintText + "\n\n"
-                            + details;
-
-                    SaveManager.saveGame(this.model, "EN_COURS");
-                    this.view.showMessage(msg);
-                } else {
-                    SaveManager.saveGame(model, "VICTOIRE");
-                    this.view.showGameOver(true, state.getCurrentScore());
-                }
-
-            } else if (state.getHandsLeft() <= 0) {
-                saveHighScoreIfBetter(state);
-                SaveManager.saveGame(model, "DÉFAITE");
-                this.view.showGameOver(false, state.getCurrentScore());
-            } else {
-                SaveManager.saveGame(model, "EN_COURS");
-                this.view.showMessage("[SCORE]" + TextConstant.TEXT_CONSTANT_HAND_PLAYED.getText() + scoreGained + TextConstant.TEXT_CONSTANT_POINTS.getText());
-            }
-            this.model.notifyObservers();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+  private void executeConditionalSave(GameSateEnum status) {
+    switch (model) {
+      case esiee.info.e3.model.gameModel.GameModel concreteModel ->
+          saveManager.saveGame(concreteModel, status);
+      default -> {}
     }
-
-    public String getJokerRarity(JokerType joker) {
-        return this.model.getJokerRarityLabel(joker);
-    }
-
-    private void saveHighScoreIfBetter(GameState state) {
-        try {
-            long currentHigh = 0;
-            File f = new File("saves/highscore.txt");
-            if (f.exists()) currentHigh = Long.parseLong(Files.readString(f.toPath()).trim());
-
-            if (state.getCurrentScore() > currentHigh) {
-                Files.writeString(f.toPath(), String.valueOf(state.getCurrentScore()));
-            }
-        } catch (IOException e) {
-            System.err.println(e.getMessage());
-        }
-    }
-
-    public void handleDiscard() {
-        if (this.model.isEmptySelectedCards()) {
-            this.view.showError(TextConstant.TEXT_CONSTANT_ERROR_PLAY_EMPTY.getText());
-            return;
-        }
-        if (this.model.getState().getDiscardsLeft() <= 0) return;
-        try {
-            this.model.discardHand(new ArrayList<>(this.model.getSelectedCards()));
-            this.model.resetSelectedCards();
-            this.model.notifyObservers();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public long getExpectedScore() { return this.model.calculateExpectedScore(); }
-    public void saveAndQuit() { SaveManager.saveGame(this.model, "EN_COURS"); this.view.showMenu(); }
-    public void exitGame() { System.exit(0); }
-
-    public long getHighScore() {
-        try {
-            java.io.File f = new java.io.File("saves/highscore.txt");
-            if (f.exists()) {
-                return Long.parseLong(java.nio.file.Files.readString(f.toPath()).trim());
-            }
-        } catch (Exception e) {
-            System.err.println("Erreur de lecture du highscore : " + e.getMessage());
-        }
-        return 0;
-    }
+  }
 }

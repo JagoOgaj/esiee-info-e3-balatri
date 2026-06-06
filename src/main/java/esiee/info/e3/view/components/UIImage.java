@@ -1,7 +1,6 @@
 package esiee.info.e3.view.components;
 
-import esiee.info.e3.view.ViewMain;
-import esiee.info.e3.view.interfaces.UIComponent;
+import esiee.info.e3.view.main.ViewMain;
 import java.awt.*;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -13,7 +12,7 @@ public record UIImage(Supplier<String> pathSupplier, ViewMain context, double ra
     Objects.requireNonNull(pathSupplier);
     Objects.requireNonNull(context);
     if (ratio <= 0) {
-      throw new IllegalArgumentException("ratio should be positive");
+      throw new IllegalArgumentException();
     }
   }
 
@@ -53,7 +52,4 @@ public record UIImage(Supplier<String> pathSupplier, ViewMain context, double ra
   public boolean handlePointerClick(int mx, int my, int x, int y, int w, int h) {
     return false;
   }
-
-  @Override
-  public void handlePointerMove(int mx, int my, int x, int y, int w, int h) {}
 }
